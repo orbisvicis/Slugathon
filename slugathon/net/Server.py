@@ -214,12 +214,15 @@ class Server(Observed):
             logging.warning("game %s does not exist", game_name)
 
     def _passwd_for_playername(self, playername):
-        with open(self.passwd_path) as fil:
-            for line in fil:
-                user, passwd = line.strip().split(":")
-                if user == playername:
-                    return passwd
-        return None
+        try:
+            with open(self.passwd_path, "r") as fil:
+                for line in fil:
+                    user, passwd = line.strip().split(":")
+                    if user == playername:
+                        return passwd
+            return None
+        except IOError:
+            return None
 
     def _add_playername_with_random_password(self, ainame):
         password = hashlib.md5(str(random.random())).hexdigest()
