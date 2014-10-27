@@ -120,6 +120,12 @@ class GUIMasterBoard(gtk.EventBox):
         self.vbox2 = gtk.VBox()
         self.hbox.pack_start(self.vbox2)
 
+        self.notebook1 = gtk.Notebook()
+        self.notebook2 = gtk.Notebook()
+        self.vbox2.pack_start(self.notebook1)
+        self.vbox2.pack_start(gtk.HSeparator())
+        self.vbox2.pack_start(self.notebook2)
+
         self.create_ui()
         self.enable_pause_ai()
         self.vbox.pack_start(self.ui.get_widget("/Menubar"), False, False, 0)
@@ -256,15 +262,14 @@ class GUIMasterBoard(gtk.EventBox):
         if not self.guicaretaker:
             self.guicaretaker = GUICaretaker.GUICaretaker(self.game,
                                                           self.playername)
-            self.vbox2.pack_start(self.guicaretaker)
+            self.notebook1.append_page(self.guicaretaker, gtk.Label("Caretaker"))
             self.game.add_observer(self.guicaretaker)
 
     def _init_status_screen(self):
         if not self.status_screen:
             self.status_screen = StatusScreen.StatusScreen(self.game,
                                                            self.playername)
-            self.vbox2.pack_start(gtk.HSeparator())
-            self.vbox2.pack_start(self.status_screen)
+            self.notebook2.append_page(self.status_screen, gtk.Label("Status"))
             self.game.add_observer(self.status_screen)
 
     def _init_inspector(self):
@@ -277,7 +282,7 @@ class GUIMasterBoard(gtk.EventBox):
         if not self.event_log:
             self.event_log = EventLog.EventLog(self.game, self.playername)
             self.game.add_observer(self.event_log)
-            self.vbox.pack_start(self.event_log)
+            self.notebook2.append_page(self.event_log, gtk.Label("Events"))
 
     def cb_delete_event(self, widget, event):
         if self.game is None or self.game.over:
