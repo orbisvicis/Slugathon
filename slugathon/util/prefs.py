@@ -214,6 +214,29 @@ def save_server(server_name, server_port):
         fil.write("%s:%d\n" % (server_name, int(server_port)))
 
 
+def last_gamename_path(playername):
+    """Return the path to the file that holds the name of the player's last game"""
+    return os.path.join(player_prefs_dir(playername), "last_game_name")
+
+
+def load_last_gamename(playername):
+    """Return the name of the player's last game, or "" if none."""
+    try:
+        with open(last_gamename_path(playername), "r") as fil:
+            line = fil.readline().strip()
+            return line
+    except IOError:
+        return ""
+
+
+def save_last_gamename(playername, gamename):
+    """Save the name of the player's last game."""
+    if not os.path.exists(player_prefs_dir(playername)):
+        os.makedirs(player_prefs_dir(playername))
+    with open(last_gamename_path(playername), "w") as fil:
+        fil.write("{}".format(gamename))
+
+
 def load_playernames():
     """Return a sorted list of known player names."""
     playernames = set()

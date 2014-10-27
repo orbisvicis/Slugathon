@@ -8,6 +8,7 @@ import gtk
 from twisted.python import log
 
 from slugathon.gui import icon, InfoDialog
+from slugathon.util import prefs
 from slugathon.util.NullUser import NullUser
 from slugathon.net import config
 
@@ -85,10 +86,21 @@ class NewGame(gtk.Dialog):
         self.ok_button = self.add_button("gtk-ok", gtk.RESPONSE_OK)
         self.ok_button.connect("button-press-event", self.ok)
 
+        self._init_name()
+
         self.show_all()
+
+    def _init_name(self):
+        last_gamename = prefs.load_last_gamename(self.playername)
+        self.name_entry.set_text(last_gamename)
+
+    def _save_name(self):
+        gamename = self.name_entry.get_text()
+        prefs.save_last_gamename(self.playername, gamename)
 
     def ok(self, widget, event):
         if self.name_entry.get_text():
+            self._save_name()
             self.game_name = self.name_entry.get_text()
             self.min_players = self.min_players_spin.get_value_as_int()
             self.max_players = self.max_players_spin.get_value_as_int()
