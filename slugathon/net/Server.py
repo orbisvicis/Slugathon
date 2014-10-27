@@ -141,10 +141,13 @@ class Server(Observed):
             st = "Games must be named"
             logging.warning(st)
             return st
-        game_info_tuples = self.get_game_info_tuples()
-        game_names = set((tup[0] for tup in game_info_tuples))
-        if game_name in game_names:
-            st = 'The game name "%s" is already in use' % game_name
+        game_names_reserved = set\
+                ( game.name
+                  for game in self.games
+                  if not game.started or not game.over
+                )
+        if game_name in game_names_reserved:
+            st = 'The game name "%s" is currently in use' % game_name
             logging.warning(st)
             return st
         if min_players > max_players:
