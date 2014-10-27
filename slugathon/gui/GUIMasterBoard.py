@@ -1070,7 +1070,7 @@ class GUIMasterBoard(gtk.EventBox):
             self.cb_destroy(True)
         else:
             confirm_dialog, def1 = ConfirmDialog.new(
-                self,
+                self.parent_window,
                 "Confirm",
                 "Are you sure you want to quit?")
             def1.addCallback(self.cb_destroy)
@@ -1082,7 +1082,7 @@ class GUIMasterBoard(gtk.EventBox):
             self.cb_destroy(True)
         else:
             confirm_dialog, def1 = ConfirmDialog.new(
-                self,
+                self.parent_window,
                 "Confirm",
                 "Are you sure you want to withdraw?")
             def1.addCallback(self.cb_withdraw2)
