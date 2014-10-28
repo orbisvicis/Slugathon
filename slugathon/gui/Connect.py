@@ -231,9 +231,11 @@ class Connect(gtk.Window):
     def connected(self, user):
         self.hide()
 
-    def connection_failed(self, arg):
+    def connection_failed(self, failure):
+        error_message = failure.getErrorMessage() or "Unknown"
+        text = "Login failed: {}".format(error_message)
         self.status_textview.modify_style(self.status_text_warn)
-        self.status_textview.get_buffer().set_text("Login failed")
+        self.status_textview.get_buffer().set_text(text)
 
     def server_failed(self, arg):
         self.status_textview.modify_style(self.status_text_warn)
