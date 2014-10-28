@@ -212,11 +212,19 @@ class Connect(gtk.Window):
             def1 = utils.getProcessValue(sys.executable,
                                          ["-m", "slugathon.net.Server", "-n"],
                                          env=os.environ)
+        # no errback called, irrespective of process return value
         def1.addCallback(self.server_exited)
-        def1.addErrback(self.server_failed)
 
     def server_exited(self, returncode):
-        logging.info("server exited with returncode %d" % returncode)
+        text = "server exited with returncode {}".format(returncode)
+        logging.info(text)
+        if returncode:
+            self.server_failed(returncode)
+
+    def server_failed(self, returncode):
+        text = "Server failed: {}".format(returncode)
+        self.status_textview.modify_style(self.status_text_warn)
+        self.status_textview.get_buffer().set_text(text)
 
     def save_window_position(self):
         x, y = self.get_position()
@@ -236,11 +244,6 @@ class Connect(gtk.Window):
         text = "Login failed: {}".format(error_message)
         self.status_textview.modify_style(self.status_text_warn)
         self.status_textview.get_buffer().set_text(text)
-
-    def server_failed(self, arg):
-        self.status_textview.modify_style(self.status_text_warn)
-        self.status_textview.get_buffer().set_text(
-                "Server failed {}".format(str(arg)))
 
 
 def add_arguments(parser):
