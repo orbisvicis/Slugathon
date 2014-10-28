@@ -90,6 +90,9 @@ class Connect(gtk.Window):
 
         self.status_textview = gtk.TextView()
         vbox1.pack_start(self.status_textview, expand=False)
+        self.status_text_norm = self.status_textview.get_modifier_style()
+        self.status_text_warn = self.status_text_norm.copy()
+        self.status_text_warn.text[gtk.STATE_NORMAL] = gtk.gdk.color_parse("red")
 
         self._init_playernames(playername)
         self._init_password(password)
@@ -199,6 +202,8 @@ class Connect(gtk.Window):
         def1.addErrback(self.connection_failed)
 
     def cb_start_server_button_clicked(self, *args):
+        self.status_textview.modify_style(self.status_text_norm)
+        self.status_textview.get_buffer().set_text("Starting server")
         if hasattr(sys, "frozen"):
             # TODO Find the absolute path.
             def1 = utils.getProcessValue("slugathon.exe", ["server", "-n"],
@@ -227,15 +232,13 @@ class Connect(gtk.Window):
         self.hide()
 
     def connection_failed(self, arg):
-        self.status_textview.modify_text(gtk.STATE_NORMAL,
-                                         gtk.gdk.color_parse("red"))
+        self.status_textview.modify_style(self.status_text_warn)
         self.status_textview.get_buffer().set_text("Login failed")
 
     def server_failed(self, arg):
-        self.status_textview.modify_text(gtk.STATE_NORMAL,
-                                         gtk.gdk.color_parse("red"))
-        self.status_textview.get_buffer().set_text("Server failed %s" %
-                                                   str(arg))
+        self.status_textview.modify_style(self.status_text_warn)
+        self.status_textview.get_buffer().set_text(
+                "Server failed {}".format(str(arg)))
 
 
 def add_arguments(parser):
