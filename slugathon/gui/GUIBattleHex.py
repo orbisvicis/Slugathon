@@ -4,7 +4,7 @@ __license__ = "GNU GPL v2"
 
 import os
 import math
-from sys import maxint
+from sys import maxsize
 
 import cairo
 import pango
@@ -69,7 +69,7 @@ class GUIBattleHex(object):
         bordering hexes.
         """
         self.vertexes = []
-        for unused in xrange(6):
+        for unused in range(6):
             self.vertexes.append(None)
         cx = self.cx
         cy = self.cy
@@ -98,10 +98,10 @@ class GUIBattleHex(object):
     @property
     def bounding_rect(self):
         """Return the bounding rectangle (x, y, width, height) of this hex."""
-        min_x = maxint
-        max_x = -maxint
-        min_y = maxint
-        max_y = -maxint
+        min_x = maxsize
+        max_x = -maxsize
+        min_y = maxsize
+        max_y = -maxsize
         for x, y in self.vertexes:
             min_x = min(min_x, x)
             min_y = min(min_y, y)

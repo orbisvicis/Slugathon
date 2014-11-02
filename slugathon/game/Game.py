@@ -2,10 +2,10 @@ __copyright__ = "Copyright (c) 2005-2012 David Ripton"
 __license__ = "GNU GPL v2"
 
 
-from sys import maxint
+from sys import maxsize
 import os
 import time
-from collections import defaultdict
+from collections import defaultdict, Counter
 import logging
 
 from twisted.internet import reactor
@@ -17,7 +17,6 @@ from slugathon.data import playercolordata
 from slugathon.util.Observed import Observed
 from slugathon.util.Observer import IObserver
 from slugathon.util import prefs, Dice
-from slugathon.util.bag import bag
 from slugathon.net import config
 
 
@@ -56,7 +55,7 @@ class Game(Observed):
         self.add_player(owner, player_class, player_info)
         self.board = MasterBoard.MasterBoard()
         self.turn = 1
-        self.phase = Phase.SPLIT
+        self.phase = Phase.PhaseMaster.SPLIT
         self.active_player = None
         self.caretaker = Caretaker.Caretaker()
         self.history = History.History()
@@ -107,7 +106,7 @@ class Game(Observed):
         self.battlemap = BattleMap.BattleMap(self.battle_masterhex.terrain,
                                              self.battle_entry_side)
         self.battle_turn = 1
-        self.battle_phase = Phase.MANEUVER
+        self.battle_phase = Phase.PhaseBattle.MANEUVER
         self.battle_active_legion = self.defender_legion
         self.defender_legion.enter_battle("DEFENDER")
         self.attacker_legion.enter_battle("ATTACKER")
@@ -147,7 +146,7 @@ class Game(Observed):
     @property
     def owner(self):
         """The owner of the game is the remaining player who joined first."""
-        min_join_order = maxint
+        min_join_order = maxsize
         owner = None
         for player in self.players:
             if player.join_order < min_join_order:
@@ -416,7 +415,7 @@ class Game(Observed):
             raise AssertionError("no legion")
         if player is not self.active_player:
             raise AssertionError("splitting out of turn")
-        if self.phase != Phase.SPLIT:
+        if self.phase is not Phase.PhaseMaster.SPLIT:
             raise AssertionError("splitting out of phase")
         player.split_legion(parent_markerid, child_markerid,
                             parent_creature_names, child_creature_names)
@@ -435,7 +434,7 @@ class Game(Observed):
         player = self.get_player_by_name(playername)
         if player is not self.active_player:
             raise AssertionError("ending split phase out of turn")
-        if self.phase == Phase.SPLIT:
+        if self.phase is Phase.PhaseMaster.SPLIT:
             player.done_with_splits()
 
     def take_mulligan(self, playername):
@@ -635,7 +634,7 @@ class Game(Observed):
         player = self.get_player_by_name(playername)
         if player is not self.active_player:
             raise AssertionError("ending move phase out of turn")
-        if self.phase == Phase.MOVE:
+        if self.phase is Phase.PhaseMaster.MOVE:
             player.done_with_moves()
         else:
             logging.warning("%s done_with_moves in wrong phase %s", playername,
@@ -735,8 +734,8 @@ class Game(Observed):
     def _accept_proposal_helper(self, winning_legion, losing_legion,
                                 survivors):
         for creature_name in winning_legion.creature_names:
-            if creature_name in survivors:
-                survivors.remove(creature_name)
+            if survivors[creature_name]:
+                survivors[creature_name] -= 1
             else:
                 winning_legion.remove_creature_by_name(creature_name)
                 self.caretaker.kill_one(creature_name)
@@ -759,7 +758,7 @@ class Game(Observed):
             action = Action.RevealLegion(self.name, losing_legion.markerid,
                                          losing_legion.creature_names)
             self.notify(action)
-            survivors = bag(attacker_creature_names)
+            survivors = Counter(attacker_creature_names)
             self._accept_proposal_helper(winning_legion, losing_legion,
                                          survivors)
         elif defender_creature_names:
@@ -769,7 +768,7 @@ class Game(Observed):
             action = Action.RevealLegion(self.name, losing_legion.markerid,
                                          losing_legion.creature_names)
             self.notify(action)
-            survivors = bag(defender_creature_names)
+            survivors = Counter(defender_creature_names)
             self._accept_proposal_helper(winning_legion, losing_legion,
                                          survivors)
 
@@ -945,7 +944,7 @@ class Game(Observed):
                                  self.pending_reinforcement,
                                  "acquire",
                                  self.pending_acquire)
-        if self.phase == Phase.FIGHT:
+        if self.phase is Phase.PhaseMaster.FIGHT:
             player.done_with_engagements()
 
     def recruit_creature(self, playername, markerid, creature_name,
@@ -960,7 +959,7 @@ class Game(Observed):
         if legion and not legion.recruited:
             creature = Creature.Creature(creature_name)
             legion.recruit_creature(creature, recruiter_names)
-            if self.phase == Phase.FIGHT:
+            if self.phase is Phase.PhaseMaster.FIGHT:
                 creature.hexlabel = "DEFENDER"
         if self.pending_reinforcement:
             self.pending_reinforcement = False
@@ -984,7 +983,7 @@ class Game(Observed):
         player = self.get_player_by_name(playername)
         if player is not self.active_player:
             return
-        if self.phase == Phase.MUSTER:
+        if self.phase is Phase.PhaseMaster.MUSTER:
             player.done_with_recruits()
 
     def summon_angel(self, playername, markerid, donor_markerid,
@@ -1001,7 +1000,7 @@ class Game(Observed):
         # Avoid double summon
         if not player.summoned:
             player.summon_angel(legion, donor, creature_name)
-            if self.phase == Phase.FIGHT:
+            if self.phase is Phase.PhaseMaster.FIGHT:
                 creature = legion.creatures[-1]
                 creature.hexlabel = "ATTACKER"
             action = Action.SummonAngel(self.name, player.name, markerid,
@@ -1109,7 +1108,7 @@ class Game(Observed):
             color = legion.player.color
             hexlabels_to_legion_colors[hexlabel].add(color)
         results = set()
-        for hexlabel, colorset in hexlabels_to_legion_colors.iteritems():
+        for hexlabel, colorset in hexlabels_to_legion_colors.items():
             if len(colorset) >= 2:
                 results.add(hexlabel)
         return results
@@ -1172,17 +1171,17 @@ class Game(Observed):
         crossing border.  For fliers, this means landing in the hex, not
         just flying over it.
 
-        If the creature cannot enter the hex, return maxint.
+        If the creature cannot enter the hex, return maxsize.
 
         This does not take other creatures in the hex into account.
         """
         cost = 1
         # terrains
         if terrain in ["Tree"]:
-            return maxint
+            return maxsize
         elif terrain in ["Bog", "Volcano"]:
             if not creature.is_native(terrain):
-                return maxint
+                return maxsize
         elif terrain in ["Bramble", "Drift"]:
             if not creature.is_native(terrain):
                 cost += 1
@@ -1198,20 +1197,20 @@ class Game(Observed):
                 cost += 1
         elif border in ["Cliff"]:
             if not creature.flies:
-                return maxint
+                return maxsize
         return cost
 
     def battle_hex_flyover_cost(self, creature, terrain):
         """Return the cost for creature to fly over the hex with terrain.
         This does not include landing in the hex.
 
-        If the creature cannot fly over the hex, return maxint.
+        If the creature cannot fly over the hex, return maxsize.
         """
         if not creature.flies:
-            return maxint
+            return maxsize
         if terrain in ["Volcano"]:
             if not creature.is_native(terrain):
-                return maxint
+                return maxsize
         return 1
 
     def _find_battle_moves_inner(self, creature, hexlabel, movement_left,
@@ -1225,7 +1224,7 @@ class Game(Observed):
         if movement_left <= 0:
             return result
         hex1 = self.battlemap.hexes[hexlabel]
-        for hexside, hex2 in hex1.neighbors.iteritems():
+        for hexside, hex2 in hex1.neighbors.items():
             try:
                 creature2 = self.creatures_in_battle_hex(hex2.label).pop()
             except KeyError:
@@ -1258,7 +1257,7 @@ class Game(Observed):
                     flyover_cost = self.battle_hex_flyover_cost(creature,
                                                                 hex2.terrain)
                 else:
-                    flyover_cost = maxint
+                    flyover_cost = maxsize
                 min_cost = min(cost, flyover_cost)
                 if min_cost < movement_left:
                     result.update(self._find_battle_moves_inner(
@@ -1338,7 +1337,7 @@ class Game(Observed):
             logging.info("%s ending reinforcement phase out of turn" %
                          playername)
             return
-        if self.battle_phase == Phase.REINFORCE:
+        if self.battle_phase is Phase.PhaseBattle.REINFORCE:
             player.done_with_reinforcements()
 
     def done_with_maneuvers(self, playername):
@@ -1350,7 +1349,7 @@ class Game(Observed):
         player = self.get_player_by_name(playername)
         if player is not self.battle_active_player:
             raise AssertionError("ending maneuver phase out of turn")
-        if self.battle_phase == Phase.MANEUVER:
+        if self.battle_phase is Phase.PhaseBattle.MANEUVER:
             player.done_with_maneuvers()
 
     def apply_drift_damage(self):
@@ -1381,8 +1380,10 @@ class Game(Observed):
         logging.info("")
         player = self.get_player_by_name(playername)
         assert player == self.battle_active_player, "striking out of turn"
-        assert self.battle_phase in [Phase.STRIKE, Phase.COUNTERSTRIKE], \
-            "striking out of phase"
+        assert self.battle_phase in \
+                [ Phase.PhaseBattle.STRIKE
+                , Phase.PhaseBattle.COUNTERSTRIKE
+                ], "striking out of phase"
         strikers = self.creatures_in_battle_hex(striker_hexlabel)
         assert len(strikers) == 1
         striker = strikers.pop()
@@ -1429,7 +1430,7 @@ class Game(Observed):
         player = self.get_player_by_name(playername)
         if player is not self.battle_active_player:
             raise AssertionError("ending strike phase out of turn")
-        if self.battle_phase == Phase.STRIKE:
+        if self.battle_phase is Phase.PhaseBattle.STRIKE:
             player.done_with_strikes()
 
     @property
@@ -1513,13 +1514,13 @@ class Game(Observed):
             if (self.active_player.dead and not self.pending_acquire and not
                     self.pending_summon and not self.pending_reinforcement):
                 logging.info("_end_dead_player_turn")
-                if self.phase == Phase.SPLIT:
+                if self.phase is Phase.PhaseMaster.SPLIT:
                     self.active_player.done_with_splits()
-                if self.phase == Phase.MOVE:
+                if self.phase is Phase.PhaseMaster.MOVE:
                     self.active_player.done_with_moves()
-                if self.phase == Phase.FIGHT:
+                if self.phase is Phase.PhaseMaster.FIGHT:
                     self.active_player.done_with_engagements()
-                if self.phase == Phase.MUSTER:
+                if self.phase is Phase.PhaseMaster.MUSTER:
                     self.active_player.done_with_recruits()
 
     def done_with_counterstrikes(self, playername):
@@ -1532,7 +1533,7 @@ class Game(Observed):
         if player is not self.battle_active_player:
             logging.info("ending counterstrike phase out of turn")
             return
-        if self.battle_phase != Phase.COUNTERSTRIKE:
+        if self.battle_phase is not Phase.PhaseBattle.COUNTERSTRIKE:
             logging.info("ending counterstrike phase out of phase")
             return
         if (not self.is_battle_over and
@@ -1751,7 +1752,7 @@ class Game(Observed):
 
         elif isinstance(action, Action.RollMovement):
             player = self.get_player_by_name(action.playername)
-            self.phase = Phase.MOVE
+            self.phase = Phase.PhaseMaster.MOVE
             # Possibly redundant, but harmless
             player.movement_roll = action.movement_roll
             player.mulligans_left = action.mulligans_left
@@ -1786,7 +1787,7 @@ class Game(Observed):
                     self.undo_move_legion(action.playername, markerid)
 
         elif isinstance(action, Action.StartFightPhase):
-            self.phase = Phase.FIGHT
+            self.phase = Phase.PhaseMaster.FIGHT
             self._cleanup_battle()
             for player in self.players:
                 player.reset_angels_pending()
@@ -1830,7 +1831,7 @@ class Game(Observed):
                                       action.defender_creature_names)
 
         elif isinstance(action, Action.StartMusterPhase):
-            self.phase = Phase.MUSTER
+            self.phase = Phase.PhaseMaster.MUSTER
             for player in self.players:
                 player.remove_empty_legions()
 
@@ -1849,7 +1850,7 @@ class Game(Observed):
 
         elif isinstance(action, Action.StartSplitPhase):
             self.turn = action.turn
-            self.phase = Phase.SPLIT
+            self.phase = Phase.PhaseMaster.SPLIT
             self.active_player = self.get_player_by_name(action.playername)
             for player in self.players:
                 player.new_turn()
@@ -1898,7 +1899,7 @@ class Game(Observed):
                 creature.undo_move()
 
         elif isinstance(action, Action.StartManeuverBattlePhase):
-            self.battle_phase = Phase.MANEUVER
+            self.battle_phase = Phase.PhaseBattle.MANEUVER
 
         elif isinstance(action, Action.StartStrikeBattlePhase):
             if (not self.attacker_entered and self.attacker_legion and
@@ -1907,9 +1908,9 @@ class Game(Observed):
                     if not creature.dead and creature.hexlabel != "ATTACKER":
                         self.attacker_entered = True
                         break
-            self.battle_phase = Phase.DRIFTDAMAGE
+            self.battle_phase = Phase.PhaseBattle.DRIFTDAMAGE
             self.apply_drift_damage()
-            self.battle_phase = Phase.STRIKE
+            self.battle_phase = Phase.PhaseBattle.STRIKE
 
         elif isinstance(action, Action.Strike):
             creatures = self.creatures_in_battle_hex(action.target_hexlabel)
@@ -1951,7 +1952,7 @@ class Game(Observed):
                     self.pending_carry = None
 
         elif isinstance(action, Action.StartCounterstrikeBattlePhase):
-            self.battle_phase = Phase.COUNTERSTRIKE
+            self.battle_phase = Phase.PhaseBattle.COUNTERSTRIKE
             # Switch active players before the counterstrike phase.
             if self.defender_legion and self.attacker_legion:
                 if action.playername == self.defender_legion.player.name:
@@ -1968,7 +1969,7 @@ class Game(Observed):
             self.battle_turn = action.battle_turn
             if self.battle_turn > 7:
                 raise Exception("should have ended on time loss")
-            self.battle_phase = Phase.REINFORCE
+            self.battle_phase = Phase.PhaseBattle.REINFORCE
 
         elif isinstance(action, Action.BattleOver):
             if action.time_loss:
@@ -2007,7 +2008,7 @@ class Game(Observed):
                 logging.info("%s %s %d", legion, legion.living_creatures,
                              legion.living_creatures_score)
                 player_to_full_points[player] += legion.living_creatures_score
-            for player, full_points in player_to_full_points.iteritems():
+            for player, full_points in player_to_full_points.items():
                 if player is not None:
                     half_points = full_points // 2
                     player.add_points(half_points)

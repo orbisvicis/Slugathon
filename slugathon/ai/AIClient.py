@@ -503,18 +503,18 @@ class AIClient(pb.Referenceable, Observed):
                 action.creature_name)
             self.update_creatures(game)
             if action.playername == self.playername:
-                if game.phase == Phase.MUSTER:
+                if game.phase is Phase.PhaseMaster.MUSTER:
                     if game.active_player.name == self.playername:
                         reactor.callLater(self.delay, self.ai.recruit, game)
-                elif game.phase == Phase.FIGHT:
-                    if game.battle_phase == Phase.REINFORCE:
+                elif game.phase is Phase.PhaseMaster.FIGHT:
+                    if game.battle_phase is Phase.PhaseBattle.REINFORCE:
                         reactor.callLater(self.delay, self.ai.reinforce, game)
                     else:
                         reactor.callLater(self.delay,
                                           self.ai.choose_engagement, game)
             else:
-                if (game.phase == Phase.FIGHT and
-                        game.battle_phase != Phase.REINFORCE and
+                if (game.phase is Phase.PhaseMaster.FIGHT and
+                        game.battle_phase is not Phase.PhaseBattle.REINFORCE and
                         game.active_player.name == self.playername):
                     reactor.callLater(self.delay, self.ai.choose_engagement,
                                       game)
@@ -534,10 +534,10 @@ class AIClient(pb.Referenceable, Observed):
         elif isinstance(action, Action.DoNotReinforce):
             game = self.name_to_game(action.game_name)
             if action.playername == self.playername:
-                assert game.phase == Phase.FIGHT
+                assert game.phase is Phase.PhaseMaster.FIGHT
                 reactor.callLater(self.delay, self.ai.choose_engagement, game)
             else:
-                if (game.phase == Phase.FIGHT and
+                if (game.phase is Phase.PhaseMaster.FIGHT and
                         game.active_player.name == self.playername):
                     reactor.callLater(self.delay, self.ai.choose_engagement,
                                       game)
@@ -553,7 +553,7 @@ class AIClient(pb.Referenceable, Observed):
                 recipient.add_creature(action.creature_name)
             self.update_creatures(game)
             if action.playername == self.playername:
-                if game.battle_phase == Phase.REINFORCE:
+                if game.battle_phase is Phase.PhaseBattle.REINFORCE:
                     reactor.callLater(self.delay, self.ai.summon_angel, game)
                 else:
                     reactor.callLater(self.delay, self.ai.choose_engagement,
@@ -569,7 +569,7 @@ class AIClient(pb.Referenceable, Observed):
                 action.creature_name)
             self.update_creatures(game)
             if action.playername == self.playername:
-                if game.battle_phase == Phase.REINFORCE:
+                if game.battle_phase is Phase.PhaseBattle.REINFORCE:
                     reactor.callLater(self.delay, self.ai.summon_angel, game)
                 else:
                     reactor.callLater(self.delay, self.ai.choose_engagement,
@@ -578,7 +578,7 @@ class AIClient(pb.Referenceable, Observed):
         elif isinstance(action, Action.DoNotSummonAngel):
             game = self.name_to_game(action.game_name)
             if action.playername == self.playername:
-                if game.battle_phase == Phase.REINFORCE:
+                if game.battle_phase is Phase.PhaseBattle.REINFORCE:
                     reactor.callLater(self.delay, self.ai.summon_angel, game)
                 else:
                     reactor.callLater(self.delay, self.ai.choose_engagement,

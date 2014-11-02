@@ -5,6 +5,7 @@ __license__ = "GNU GPL v2"
 
 
 import logging
+from collections import Counter
 
 from twisted.internet import gtk2reactor
 try:
@@ -15,7 +16,6 @@ from twisted.internet import defer, reactor
 import gtk
 
 from slugathon.gui import Chit, Marker, icon
-from slugathon.util.bag import bag
 
 
 ACCEPT = 0
@@ -81,13 +81,13 @@ class Proposal(gtk.Dialog):
 
         attacker_chits = []
 
-        surviving_attackers = bag(attacker_creature_names)
-        surviving_defenders = bag(defender_creature_names)
+        surviving_attackers = Counter(attacker_creature_names)
+        surviving_defenders = Counter(defender_creature_names)
 
         for creature in attacker_legion.sorted_creatures:
             name = creature.name
-            if name in surviving_attackers:
-                surviving_attackers.remove(name)
+            if surviving_attackers[name]:
+                surviving_attackers[name] -= 1
                 dead = False
             else:
                 dead = True
@@ -100,8 +100,8 @@ class Proposal(gtk.Dialog):
 
         for creature in defender_legion.sorted_creatures:
             name = creature.name
-            if name in surviving_defenders:
-                surviving_defenders.remove(name)
+            if surviving_defenders[name]:
+                surviving_defenders[name] -= 1
                 dead = False
             else:
                 dead = True

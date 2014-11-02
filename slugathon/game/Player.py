@@ -2,15 +2,14 @@ __copyright__ = "Copyright (c) 2003-2012 David Ripton"
 __license__ = "GNU GPL v2"
 
 
-import types
 import logging
 
+from collections import Counter
 from twisted.internet import reactor
 
 from slugathon.util.Observed import Observed
 from slugathon.game import Action, Creature, Legion, Phase
 from slugathon.data import playercolordata, creaturedata, markerdata
-from slugathon.util.bag import bag
 from slugathon.util import Dice
 
 
@@ -57,6 +56,7 @@ class Player(Observed):
 
     @property
     def legions(self):
+        """Dynamic view of the values in markerid_to_legion"""
         return self.markerid_to_legion.values()
 
     @property
@@ -91,7 +91,7 @@ class Player(Observed):
 
     def assign_starting_tower(self, tower):
         """Set this player's starting tower to the (int) tower"""
-        assert isinstance(tower, types.IntType)
+        assert isinstance(tower, int)
         self.starting_tower = tower
         action = Action.AssignTower(self.game.name, self.name, tower)
         self.notify(action)
@@ -101,7 +101,7 @@ class Player(Observed):
         self.color = color
         abbrev = self.color_abbrev
         num_markers = len(markerdata.data[color])
-        for ii in xrange(num_markers):
+        for ii in range(num_markers):
             self.markerids_left.add("%s%02d" % (abbrev, ii + 1))
         logging.info(self.markerids_left)
         action = Action.PickedColor(self.game.name, self.name, color)
@@ -162,10 +162,11 @@ class Player(Observed):
             return
         if child_markerid not in self.markerids_left:
             raise AssertionError("illegal marker")
-        if (bag(parent.creature_names) != bag(parent_creature_names).union(
-                bag(child_creature_names)) and
-            bag(parent_creature_names).union(bag(child_creature_names)) !=
-                bag({"Unknown": len(parent)})):
+        if  (   Counter(parent_creature_names) + Counter(child_creature_names) !=
+                    Counter(parent.creature_names)
+            and Counter(parent_creature_names) + Counter(child_creature_names) !=
+                    Counter({"Unknown": len(parent)})
+            ):
             raise AssertionError("wrong creatures",
                                  "parent.creature_names",
                                  parent.creature_names,
@@ -240,7 +241,7 @@ class Player(Observed):
     @property
     def can_exit_split_phase(self):
         """Return True if legal to exit the split phase"""
-        if self.game.phase != Phase.SPLIT:
+        if self.game.phase is not Phase.PhaseMaster.SPLIT:
             return False
         if self.dead:
             return True
@@ -260,8 +261,11 @@ class Player(Observed):
     @property
     def can_take_mulligan(self):
         """Return True iff this player can take a mulligan"""
-        return bool(self is self.game.active_player and self.game.turn == 1
-                    and self.game.phase == Phase.MOVE and self.mulligans_left)
+        return  (   self is self.game.active_player
+                and self.game.turn == 1
+                and self.game.phase is Phase.PhaseMaster.MOVE
+                and self.mulligans_left
+                )
 
     def take_mulligan(self):
         self.mulligans_left -= 1
@@ -302,7 +306,7 @@ class Player(Observed):
     @property
     def can_exit_move_phase(self):
         """Return True iff this player can finish the move phase."""
-        if self.game.phase != Phase.MOVE:
+        if self.game.phase is not Phase.PhaseMaster.MOVE:
             return False
         if self.dead:
             return True
@@ -353,7 +357,7 @@ class Player(Observed):
     @property
     def can_exit_fight_phase(self):
         """Return True iff this player can finish the fight phase."""
-        if self.game.phase != Phase.FIGHT:
+        if self.game.phase is not Phase.PhaseMaster.FIGHT:
             return False
         logging.info("can_exit_fight_phase %s %s %s %s",
                      self.game.engagement_hexlabels, self.game.pending_summon,
@@ -405,17 +409,19 @@ class Player(Observed):
 
     def done_with_battle_phase(self):
         """Finish whatever battle phase it currently is."""
-        if self.game.battle_phase == Phase.REINFORCE:
+        if self.game.battle_phase is Phase.PhaseBattle.REINFORCE:
             self.done_with_reinforcements()
-        elif self.game.battle_phase == Phase.MANEUVER:
+        elif self.game.battle_phase is Phase.PhaseBattle.MANEUVER:
             self.done_with_maneuvers()
-        elif self.game.battle_phase == Phase.STRIKE:
+        elif self.game.battle_phase is Phase.PhaseBattle.STRIKE:
             self.done_with_strikes()
-        elif self.game.battle_phase == Phase.COUNTERSTRIKE:
+        elif self.game.battle_phase is Phase.PhaseBattle.COUNTERSTRIKE:
             self.done_with_counterstrikes()
 
     def done_with_recruits(self):
-        if self.game.active_player != self or self.game.phase != Phase.MUSTER:
+        if  (   self.game.active_player != self
+            or  self.game.phase is not Phase.PhaseMaster.MUSTER
+            ):
             logging.info("illegal call to done_with_recruits")
             return
         (player, turn) = self.game.next_player_and_turn
@@ -527,7 +533,7 @@ class Player(Observed):
 
     def remove_legion(self, markerid):
         """Remove the legion with markerid."""
-        assert type(markerid) == str
+        assert isinstance(markerid, str)
         if markerid in self.markerid_to_legion:
             legion = self.markerid_to_legion[markerid]
             legion.remove_observer(self)

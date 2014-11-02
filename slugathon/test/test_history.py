@@ -4,7 +4,7 @@ __license__ = "GNU GPL v2"
 
 import tempfile
 import os
-import cStringIO as StringIO
+import io
 
 from slugathon.game import History, Action
 
@@ -203,7 +203,7 @@ def test_load2():
     history = History.History()
     assert history.actions == []
     assert history.undone == []
-    fil = StringIO.StringIO(savefile_str)
+    fil = io.StringIO(savefile_str)
     history.load(fil)
     assert len(history.actions) == 23
 

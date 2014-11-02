@@ -68,7 +68,7 @@ def test_can_exit_move_phase():
     legion1.move(8, False, None, 1)
     assert not player.can_exit_move_phase
     legion2.move(200, True, "Angel", 3)
-    game.phase = Phase.MOVE
+    game.phase = Phase.PhaseMaster.MOVE
     assert player.can_exit_move_phase
 
 

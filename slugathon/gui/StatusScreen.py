@@ -74,7 +74,7 @@ class StatusScreen(gtk.EventBox):
                                     "Eliminated", "Score"]):
             add_label(self.player_table, 1, row, self.default_bg, text)
 
-        for col in xrange(len(self.game.players)):
+        for col in range(len(self.game.players)):
             for row, st in enumerate(["name%d_label",
                                       "tower%d_label",
                                       "color%d_label",
@@ -97,7 +97,7 @@ class StatusScreen(gtk.EventBox):
 
     def _init_turn(self):
         self.game_turn_label.set_text(str(self.game.turn))
-        self.game_phase_label.set_text(Phase.phase_names[self.game.phase])
+        self.game_phase_label.set_text(str(self.game.phase))
         if self.game.active_player:
             if self.game.active_player.name == self.playername:
                 set_bg(self.game_player_label, "Yellow")
@@ -200,8 +200,7 @@ class StatusScreen(gtk.EventBox):
                 set_bg(self.battle_player_label, self.default_bg)
             self.battle_player_label.set_text(
                 self.game.battle_active_player.name)
-            self.battle_phase_label.set_text(Phase.battle_phase_names[
-                                             self.game.battle_phase])
+            self.battle_phase_label.set_text(str(self.game.battle_phase))
         else:
             self._clear_battle()
 
@@ -257,13 +256,13 @@ class StatusScreen(gtk.EventBox):
             markers_label.set_text(str(len(player.markerids_left)))
 
         elif isinstance(action, Action.RollMovement):
-            self.game_phase_label.set_text(Phase.phase_names[self.game.phase])
+            self.game_phase_label.set_text(str(self.game.phase))
 
         elif isinstance(action, Action.StartFightPhase):
-            self.game_phase_label.set_text(Phase.phase_names[self.game.phase])
+            self.game_phase_label.set_text(str(self.game.phase))
 
         elif isinstance(action, Action.StartMusterPhase):
-            self.game_phase_label.set_text(Phase.phase_names[self.game.phase])
+            self.game_phase_label.set_text(str(self.game.phase))
             playername = action.playername
             player = self.game.get_player_by_name(playername)
             player_num = self.game.players.index(player)
@@ -297,7 +296,7 @@ class StatusScreen(gtk.EventBox):
               isinstance(action, Action.DoNotSummonAngel)):
             self._clear_battle()
             self._color_player_columns()
-            self.game_phase_label.set_text(Phase.phase_names[self.game.phase])
+            self.game_phase_label.set_text(str(self.game.phase))
             for num, player in enumerate(self.game.players):
                 legions_label = getattr(self, "legions%d_label" % num)
                 legions_label.set_text(str(len(player.markerid_to_legion)))

@@ -60,8 +60,8 @@ def test_load_servers():
     assert entries
     for entry in entries:
         server, port = entry
-        assert type(server) == str
-        assert type(port) == int
+        assert isinstance(server, str)
+        assert isinstance(port, int)
     assert ("localhost", config.DEFAULT_PORT) in entries
 
 

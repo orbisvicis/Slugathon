@@ -13,6 +13,7 @@ import random
 import hashlib
 import logging
 from logging.handlers import RotatingFileHandler
+from collections import Counter
 
 from twisted.spread import pb
 from twisted.cred.portal import Portal
@@ -27,7 +28,6 @@ from slugathon.util.Observer import IObserver
 from slugathon.net.UniqueFilePasswordDB import UniqueFilePasswordDB
 from slugathon.net.UniqueNoPassword import UniqueNoPassword
 from slugathon.util import prefs
-from slugathon.util.bag import bag
 
 
 TEMPDIR = tempfile.gettempdir()
@@ -240,7 +240,7 @@ class Server(Observed):
                 for player in game3.players:
                     player_id = self.results.get_player_id(player.player_info)
                     excludes.add(player_id)
-        for game_name, waiting_ais in self.game_to_waiting_ais.iteritems():
+        for game_name, waiting_ais in self.game_to_waiting_ais.items():
             game2 = self.name_to_game(game_name)
             if game2 and not game2.over and game2 != game:
                 for ainame in waiting_ais:
@@ -251,7 +251,7 @@ class Server(Observed):
                       game.name, game.min_players, game.num_players, num_ais)
         logging.debug("%s excludes %s", game.name, sorted(excludes))
         ainames = []
-        for unused in xrange(num_ais):
+        for unused in range(num_ais):
             player_id = self.results.get_weighted_random_player_id(
                 excludes=excludes, highest_mu=game.any_humans)
             excludes.add(player_id)
@@ -341,7 +341,7 @@ class Server(Observed):
         if player is not game.active_player:
             logging.warning("wrong player")
             return
-        if game.phase != Phase.SPLIT:
+        if game.phase is not Phase.PhaseMaster.SPLIT:
             logging.warning("wrong phase")
             return
         parent = player.markerid_to_legion.get(parent_markerid)
@@ -363,8 +363,9 @@ class Server(Observed):
         if len(child_creature_names) > 5:
             logging.warning("child too tall")
             return
-        if bag(parent.creature_names) != bag(parent_creature_names).union(
-                bag(child_creature_names)):
+        if (    Counter(parent_creature_names) + Counter(child_creature_names) !=
+                Counter(parent.creature_names)
+           ):
             logging.warning("wrong creatures")
         game.split_legion(playername, parent_markerid, child_markerid,
                           parent_creature_names, child_creature_names)
@@ -594,7 +595,7 @@ class Server(Observed):
         if game:
             player = game.get_player_by_name(playername)
             if (player is not None and player == game.battle_active_player and
-                    game.battle_phase == Phase.REINFORCE):
+                    game.battle_phase is Phase.PhaseBattle.REINFORCE):
                 game.done_with_reinforcements(playername)
 
     def done_with_maneuvers(self, playername, game_name):
@@ -603,7 +604,7 @@ class Server(Observed):
         if game:
             player = game.get_player_by_name(playername)
             if (player is not None and player == game.battle_active_player and
-                    game.battle_phase == Phase.MANEUVER):
+                    game.battle_phase is Phase.PhaseBattle.MANEUVER):
                 game.done_with_maneuvers(playername)
 
     def strike(self, playername, game_name, striker_name, striker_hexlabel,
@@ -620,7 +621,7 @@ class Server(Observed):
         if game:
             player = game.get_player_by_name(playername)
             if (player is not None and player == game.battle_active_player and
-                    game.battle_phase == Phase.STRIKE):
+                    game.battle_phase is Phase.PhaseBattle.STRIKE):
                 game.done_with_strikes(playername)
 
     def done_with_counterstrikes(self, playername, game_name):
@@ -629,7 +630,7 @@ class Server(Observed):
         if game:
             player = game.get_player_by_name(playername)
             if (player is not None and player == game.battle_active_player and
-                    game.battle_phase == Phase.COUNTERSTRIKE):
+                    game.battle_phase is Phase.PhaseBattle.COUNTERSTRIKE):
                 game.done_with_counterstrikes(playername)
 
     def acquire_angels(self, playername, game_name, markerid, angel_names):
@@ -700,7 +701,7 @@ class Server(Observed):
                     game.pending_acquire):
                 logging.warning("waiting on something")
                 return
-            if game.phase != Phase.FIGHT:
+            if game.phase is not Phase.PhaseMaster.FIGHT:
                 logging.warning("wrong phase")
                 return
             game.done_with_engagements(playername)

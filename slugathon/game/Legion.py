@@ -2,10 +2,9 @@ __copyright__ = "Copyright (c) 2004-2012 David Ripton"
 __license__ = "GNU GPL v2"
 
 
-import types
 import logging
+from collections import Counter
 
-from slugathon.util.bag import bag
 from slugathon.data import recruitdata, markerdata, playercolordata
 from slugathon.game import Creature, Action
 from slugathon.util.Observed import Observed
@@ -21,7 +20,7 @@ class Legion(Observed):
 
     def __init__(self, player, markerid, creatures, hexlabel):
         Observed.__init__(self)
-        assert isinstance(hexlabel, types.IntType)
+        assert isinstance(hexlabel, int)
         self.markerid = markerid
         self.picname = find_picname(markerid)
         self.creatures = creatures
@@ -123,7 +122,7 @@ class Legion(Observed):
         """Return the number of living creatures in the legion."""
         return len(self.living_creature_names)
 
-    def __nonzero__(self):
+    def __bool__(self):
         """Zero height legions should not be False."""
         return True
 
@@ -209,17 +208,22 @@ class Legion(Observed):
             return False
         if len(child1) < 2 or len(child2) < 2:
             return False
-        if (bag(self.creature_names) != bag(child1.creature_names +
-                                            child2.creature_names)
-            and bag(child1.creature_names).union(bag(child2.creature_names))
-                != bag({"Unknown": len(self)})):
+        if  (   Counter(child1.creature_names + child2.creature_names) !=
+                    Counter(self.creature_names)
+            and Counter(child1.creature_names) + Counter(child2.creature_names) !=
+                    Counter({"Unknown": len(self)})
+            ):
             return False
         if len(self) == 8:
             if len(child1) != 4 or len(child2) != 4:
                 return False
-            if ((child1.num_lords != 1 or child2.num_lords != 1) and
-               ((bag(child1.creature_names) != bag({"Unknown": 4}) or
-                 bag(child2.creature_names) != bag({"Unknown": 4})))):
+            if  (   (   child1.num_lords != 1
+                    or  child2.num_lords != 1
+                    )
+                and (   Counter(child1.creature_names) != Counter({"Unknown": 4})
+                    or  Counter(child2.creature_names) != Counter({"Unknown": 4})
+                    )
+                ):
                 return False
         return True
 
@@ -227,10 +231,10 @@ class Legion(Observed):
         """Reveal the creatures from creature_names, if they're not
         already known to be in this legion."""
         if self.any_unknown:
-            bag1 = bag(self.creature_names)
-            bag2 = bag(creature_names)
-            for creature_name, count2 in bag2.iteritems():
-                count1 = bag1[creature_name]
+            counter1 = Counter(self.creature_names)
+            counter2 = Counter(creature_names)
+            for creature_name, count2 in counter2.items():
+                count1 = counter1[creature_name]
                 while count2 > count1 and self.any_unknown:
                     self.creatures.remove(Creature.Creature("Unknown"))
                     creature = Creature.Creature(creature_name)
@@ -286,9 +290,9 @@ class Legion(Observed):
     def _max_creatures_of_one_type(self):
         """Return the maximum number of creatures (not lords or demi-lords) of
         the same type in this legion."""
-        counts = bag(self.creature_names)
+        counts = Counter(self.creature_names)
         maximum = 0
-        for name, num in counts.iteritems():
+        for name, num in counts.items():
             if (num > maximum and Creature.Creature(name).is_creature):
                 maximum = num
         return maximum
@@ -340,12 +344,12 @@ class Legion(Observed):
         The list is sorted in the same order as within recruitdata.
         """
         result_list = []
-        counts = bag(self.living_creature_names)
+        counts = Counter(self.living_creature_names)
         recruits = recruitdata.data[mterrain]
         for sublist in self._gen_sublists(recruits):
             names = [tup[0] for tup in sublist]
             nums = [tup[1] for tup in sublist]
-            for ii in xrange(len(sublist)):
+            for ii in range(len(sublist)):
                 name = names[ii]
                 num = nums[ii]
                 if ii >= 1:
@@ -354,7 +358,7 @@ class Legion(Observed):
                     prev = None
                 if prev == recruitdata.ANYTHING:
                     # basic tower creature
-                    for jj in xrange(ii + 1):
+                    for jj in range(ii + 1):
                         if nums[jj] and caretaker.counts.get(names[jj]):
                             result_list.append((names[jj],))
                 else:
@@ -362,15 +366,15 @@ class Legion(Observed):
                        self._max_creatures_of_one_type() >= num):
                         # guardian
                         recruiters = []
-                        for name2, num2 in counts.iteritems():
+                        for name2, num2 in counts.items():
                             if (num2 >= num and Creature.Creature(
                                     name2).is_creature):
                                 recruiters.append(name2)
-                        for jj in xrange(ii + 1):
+                        for jj in range(ii + 1):
                             if nums[jj] and caretaker.counts.get(names[jj]):
                                 for recruiter in recruiters:
                                     li = [names[jj]]
-                                    for kk in xrange(num):
+                                    for kk in range(num):
                                         li.append(recruiter)
                                     tup = tuple(li)
                                     result_list.append(tup)
@@ -378,13 +382,13 @@ class Legion(Observed):
                         # recruit up
                         if num and caretaker.counts.get(name):
                             li = [name]
-                            for kk in xrange(num):
+                            for kk in range(num):
                                 li.append(prev)
                             tup = tuple(li)
                             result_list.append(tup)
                     if counts[name] and num:
                         # recruit same or down
-                        for jj in xrange(ii + 1):
+                        for jj in range(ii + 1):
                             if nums[jj] and caretaker.counts.get(names[jj]):
                                 result_list.append((names[jj], name))
 

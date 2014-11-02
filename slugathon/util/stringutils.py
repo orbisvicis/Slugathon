@@ -1,24 +1,19 @@
 __copyright__ = "Copyright (c) 2014 Yclept Nemo"
-__license__ = "GNU GPL v2"
+__license__ = "GNU GPL v3"
 
 
-import enum
-import unittest
 import stringprep
 from unicodedata import ucd_3_2_0 as unicodedata
-
-
-def compose(*functions):
-    def c2(f, g):
-        return lambda *args, **kwargs: f(g(*args, **kwargs))
-    return reduce(c2, functions)
+from slugathon.funcutils import compose
+from slugathon.util.enumutils import StrValueEnum
+import unittest
 
 
 class IdentifierError(UnicodeError):
     pass
 
 
-class IdentifierErrors(enum.Enum):
+class IdentifierErrors(StrValueEnum):
     restriction_unassigned                  = "Unassigned unicode characters prohibited"
     restriction_combiners                   = "Leading unicode combiners prohibited"
     restriction_prohibited                  = "String contains prohibited unicode characters"
@@ -136,7 +131,7 @@ class Identifier:
         , 0x200C
         , 0x200D
         ] + \
-        range(0xFE00,0xFE0F+1)
+        list(range(0xFE00,0xFE0F+1))
 
     def __init__(self, unistr):
         self.provenance = unistr
@@ -236,7 +231,7 @@ class Identifier:
             mapper = stringprep.map_table_b2
         else:
             mapper = stringprep.map_table_b3
-        return u"".join(mapper(c) for c in unistr)
+        return "".join(mapper(c) for c in unistr)
 
     @staticmethod
     def combine(unistr):
@@ -251,8 +246,8 @@ class Identifier:
             yield group
 
     def filter_spaces(self, unistr):
-        return u"".join\
-            ( u"".join(group)
+        return "".join\
+            ( "".join(group)
               for group in
               self.combine(unistr)
               if not stringprep.in_table_c11_c12(group[0])
@@ -262,7 +257,7 @@ class Identifier:
 
     @staticmethod
     def filter_table(unistr, table):
-        return u"".join(\
+        return "".join(\
             c for c in unistr
             if c not in table
             )
@@ -279,7 +274,7 @@ class IdentifierTest(unittest.TestCase):
             for i in input_invalid:
                 with self.assertRaises(IdentifierError) as cm:
                     Identifier(i)
-                self.assertIs(cm.exception.message, output)
+                self.assertIs(cm.exception.args[0], output)
             for i in input_valid:
                 Identifier(i)
         return tester
@@ -287,25 +282,25 @@ class IdentifierTest(unittest.TestCase):
 
     test_visible = driver_errors\
         ( input_valid = \
-            [ u" \u0300"
+            [ " \u0300"
             ]
         , input_invalid = \
-            [ u""
-            , u" "
-            , u"\u200A"
-            , u"\u3000"
+            [""
+            ," "
+            ,"\u200A"
+            ,"\u3000"
             ]
         , output = IdentifierErrors.restriction_visible
         )
 
     test_combiner = driver_errors\
         ( input_valid = \
-            [ u"foo"
-            , u"foo\u0300"
-            , u"\u0060\u0300"
+            [ "foo"
+            , "foo\u0300"
+            , "\u0060\u0300"
             ]
         , input_invalid = \
-            [ u"\u0300string"
+            [ "\u0300string"
             ]
         , output = IdentifierErrors.restriction_combiners
         )
@@ -313,7 +308,7 @@ class IdentifierTest(unittest.TestCase):
     test_unassigned = driver_errors\
         ( input_valid = []
         , input_invalid = \
-            [ u"foo\u0620"
+            [ "foo\u0620"
             ]
         , output = IdentifierErrors.restriction_unassigned
         )
@@ -321,20 +316,20 @@ class IdentifierTest(unittest.TestCase):
     test_prohibited_general_and_bidirectional = driver_errors\
         ( input_valid = []
         , input_invalid = \
-            [ u"foo\u0009"
-            , u"foo\u0000"
-            , u"foo\u206A"
-            , u"foo\u202A"
+            [ "foo\u0009"
+            , "foo\u0000"
+            , "foo\u206A"
+            , "foo\u202A"
             ]
         , output = IdentifierErrors.restriction_prohibited
         )
 
     test_bidirectional_mixed = driver_errors\
         ( input_valid = \
-            [ u"foo\u0386baz"
+            [ "foo\u0386baz"
             ]
         , input_invalid = \
-            [ u"foo\u05BEbar"
+            [ "foo\u05BEbar"
             ]
         , output = IdentifierErrors.restriction_bidirectional_mixed
         )
@@ -342,7 +337,7 @@ class IdentifierTest(unittest.TestCase):
     test_bidirectional_affix = driver_errors\
         ( input_valid = []
         , input_invalid = \
-            [ u"\u05dA\u05BE01"
+            [ "\u05dA\u05BE01"
             ]
         , output = IdentifierErrors.restriction_bidirectional_affix
         )

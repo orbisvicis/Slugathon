@@ -62,7 +62,7 @@ class PickStrikePenalty(gtk.Dialog):
                         dice_strike_to_creatures[tup].add(creature)
 
         for ii, (tup, creatures) in enumerate(sorted(
-                dice_strike_to_creatures.iteritems())):
+                dice_strike_to_creatures.items())):
             (num_dice3, strike_number3) = tup
             if creatures:
                 st = "%d dice at strike number %d, able to carry to %s" % (
@@ -146,9 +146,10 @@ if __name__ == "__main__":
     centaur2.move("D3")
     gargoyle2 = attacker.creatures[3]
     gargoyle2.move("D4")
-    game.battle_phase = Phase.STRIKE
+    game.battle_phase = Phase.PhaseBattle.STRIKE
 
-    def my_callback((striker, target, num_dice, strike_number)):
+    def my_callback(result):
+        striker, target, num_dice, strike_number = result
         logging.info("called my_callback %s %s %s %s", striker, target,
                      num_dice, strike_number)
         reactor.stop()

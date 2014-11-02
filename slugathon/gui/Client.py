@@ -147,8 +147,9 @@ class Client(pb.Referenceable, Observed):
                                                  self.main_window)
             def1.addCallback(self._cb_pickcolor)
 
-    def _cb_pickcolor(self, (game, color)):
+    def _cb_pickcolor(self, result):
         """Callback for PickColor"""
+        game, color = result
         if color is None:
             self._maybe_pick_color(game)
         else:
@@ -164,8 +165,9 @@ class Client(pb.Referenceable, Observed):
             def1.addCallback(self.pick_marker)
             self.pickcolor = None
 
-    def pick_marker(self, (game_name, playername, markerid)):
+    def pick_marker(self, result):
         """Callback from PickMarker."""
+        game_name, playername, markerid = result
         game = self.name_to_game(game_name)
         player = game.get_player_by_name(playername)
         if markerid is None:

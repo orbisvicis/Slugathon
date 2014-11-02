@@ -146,7 +146,7 @@ class GUIBattleMap(gtk.EventBox):
             self.hbox5.pack_start(self.defender_graveyard)
 
         self.guihexes = {}
-        for hex1 in self.battlemap.hexes.itervalues():
+        for hex1 in self.battlemap.hexes.values():
             self.guihexes[hex1.label] = GUIBattleHex.GUIBattleHex(hex1, self)
         self.repaint_hexlabels = set()
 
@@ -225,7 +225,7 @@ class GUIBattleMap(gtk.EventBox):
 
     def unselect_all(self):
         """Unselect all guihexes."""
-        for hexlabel, guihex in self.guihexes.iteritems():
+        for hexlabel, guihex in self.guihexes.items():
             if guihex.selected:
                 guihex.selected = False
                 self.repaint_hexlabels.add(hexlabel)
@@ -330,7 +330,7 @@ class GUIBattleMap(gtk.EventBox):
             if chit.point_inside((event.x, event.y)):
                 self.clicked_on_chit(area, event, chit)
                 return True
-        for guihex in self.guihexes.itervalues():
+        for guihex in self.guihexes.values():
             if guiutils.point_in_polygon((event.x, event.y), guihex.points):
                 hexlabel = guihex.battlehex.label
                 chits = self.chits_in_hex(hexlabel)
@@ -348,11 +348,11 @@ class GUIBattleMap(gtk.EventBox):
         self.unselect_all()
         if not self.game or not self.game.battle_active_player:
             return
-        if self.game.battle_phase == Phase.MANEUVER:
+        if self.game.battle_phase is Phase.PhaseBattle.MANEUVER:
             if self.game.battle_active_player.name == self.playername:
                 self.highlight_mobile_chits()
-        elif (self.game.battle_phase == Phase.STRIKE
-              or self.game.battle_phase == Phase.COUNTERSTRIKE):
+        elif (self.game.battle_phase is Phase.PhaseBattle.STRIKE
+              or self.game.battle_phase is Phase.PhaseBattle.COUNTERSTRIKE):
             if self.game.battle_active_player.name == self.playername:
                 self.highlight_strikers()
 
@@ -362,7 +362,7 @@ class GUIBattleMap(gtk.EventBox):
             self.repaint(hexlabels=[guihex.battlehex.label])
             return
         phase = self.game.battle_phase
-        if phase == Phase.MANEUVER:
+        if phase is Phase.PhaseBattle.MANEUVER:
             if self.selected_chit is not None and guihex.selected:
                 creature = self.selected_chit.creature
                 def1 = self.user.callRemote("move_creature",
@@ -377,12 +377,12 @@ class GUIBattleMap(gtk.EventBox):
                self.game.battle_active_player.name == self.playername):
                 self.highlight_mobile_chits()
 
-        elif phase == Phase.STRIKE or phase == Phase.COUNTERSTRIKE:
+        elif phase is Phase.PhaseBattle.STRIKE or phase is Phase.PhaseBattle.COUNTERSTRIKE:
             self.highlight_strikers()
 
     def clicked_on_chit(self, area, event, chit):
         phase = self.game.battle_phase
-        if phase == Phase.MANEUVER:
+        if phase is Phase.PhaseBattle.MANEUVER:
             creature = chit.creature
             legion = creature.legion
             player = legion.player
@@ -398,7 +398,7 @@ class GUIBattleMap(gtk.EventBox):
                 guihex.selected = True
             self.repaint(hexlabels)
 
-        elif phase == Phase.STRIKE or phase == Phase.COUNTERSTRIKE:
+        elif phase is Phase.PhaseBattle.STRIKE or phase is Phase.PhaseBattle.COUNTERSTRIKE:
             creature = chit.creature
             legion = creature.legion
             player = legion.player
@@ -567,15 +567,15 @@ class GUIBattleMap(gtk.EventBox):
             return
         player = self.game.get_player_by_name(self.playername)
         if player == self.game.battle_active_player:
-            if self.game.battle_phase == Phase.REINFORCE:
+            if self.game.battle_phase is Phase.PhaseBattle.REINFORCE:
                 def1 = self.user.callRemote("done_with_reinforcements",
                                             self.game.name)
                 def1.addErrback(self.failure)
-            elif self.game.battle_phase == Phase.MANEUVER:
+            elif self.game.battle_phase is Phase.PhaseBattle.MANEUVER:
                 def1 = self.user.callRemote("done_with_maneuvers",
                                             self.game.name)
                 def1.addErrback(self.failure)
-            elif self.game.battle_phase == Phase.STRIKE:
+            elif self.game.battle_phase is Phase.PhaseBattle.STRIKE:
                 if not self.game.battle_active_legion.forced_strikes:
                     def1 = self.user.callRemote("done_with_strikes",
                                                 self.game.name)
@@ -583,7 +583,7 @@ class GUIBattleMap(gtk.EventBox):
                 else:
                     InfoDialog.InfoDialog(self.parent_window, "Info",
                                           "Forced strikes remain")
-            elif self.game.battle_phase == Phase.COUNTERSTRIKE:
+            elif self.game.battle_phase is Phase.PhaseBattle.COUNTERSTRIKE:
                 if not self.game.battle_active_legion.forced_strikes:
                     def1 = self.user.callRemote("done_with_counterstrikes",
                                                 self.game.name)
@@ -681,7 +681,7 @@ class GUIBattleMap(gtk.EventBox):
             x, y, width, height = guihex.bounding_rect
             ctx.rectangle(x, y, width, height)
             ctx.fill()
-        for guihex in self.guihexes.itervalues():
+        for guihex in self.guihexes.values():
             if guiutils.rectangles_intersect(clip_rect, guihex.bounding_rect):
                 guihex.update_gui(ctx)
         self.draw_chits(ctx)
@@ -780,7 +780,7 @@ class GUIBattleMap(gtk.EventBox):
                   self.game.battle_active_player.name == self.playername):
                 strikers = self.game.battle_active_legion.strikers
                 if not strikers:
-                    if self.game.battle_phase == Phase.STRIKE:
+                    if self.game.battle_phase is Phase.PhaseBattle.STRIKE:
                         def1 = self.user.callRemote("done_with_strikes",
                                                     self.game.name)
                         def1.addErrback(self.failure)
@@ -835,7 +835,7 @@ class GUIBattleMap(gtk.EventBox):
                   self.game.battle_active_player.name == self.playername):
                 strikers = self.game.battle_active_legion.strikers
                 if not strikers:
-                    if self.game.battle_phase == Phase.STRIKE:
+                    if self.game.battle_phase is Phase.PhaseBattle.STRIKE:
                         def1 = self.user.callRemote("done_with_strikes",
                                                     self.game.name)
                         def1.addErrback(self.failure)
@@ -952,7 +952,8 @@ class GUIBattleMap(gtk.EventBox):
         elif isinstance(action, Action.UnsummonAngel):
             self.repaint(["ATTACKER"])
 
-    def picked_reinforcement(self, (legion, creature, recruiter_names)):
+    def picked_reinforcement(self, result):
+        legion, creature, recruiter_names = result
         if legion and creature:
             def1 = self.user.callRemote("recruit_creature", self.game.name,
                                         legion.markerid, creature.name,
@@ -963,7 +964,8 @@ class GUIBattleMap(gtk.EventBox):
                                         self.game.name)
             def1.addErrback(self.failure)
 
-    def picked_summon(self, (legion, donor, creature)):
+    def picked_summon(self, result):
+        legion, donor, creature = result
         if legion and donor and creature:
             def1 = self.user.callRemote("summon_angel", self.game.name,
                                         legion.markerid, donor.markerid,
@@ -974,7 +976,8 @@ class GUIBattleMap(gtk.EventBox):
                                         self.game.name)
             def1.addErrback(self.failure)
 
-    def picked_carry(self, (carry_target, carries)):
+    def picked_carry(self, result):
+        carry_target, carries = result
         logging.info("picked_carry %s %s", carry_target, carries)
         if self.pickcarry is not None:
             self.pickcarry.destroy()
@@ -984,8 +987,8 @@ class GUIBattleMap(gtk.EventBox):
                                     carries)
         def1.addErrback(self.failure)
 
-    def picked_strike_penalty(self, (striker, target, num_dice,
-                                     strike_number)):
+    def picked_strike_penalty(self, result):
+        striker, target, num_dice, strike_number = result
         logging.info("picked_strike_penalty %s %s %s %s", striker, target,
                      num_dice, strike_number)
         if striker is None:
@@ -1018,7 +1021,7 @@ if __name__ == "__main__":
         if len(argv) > 2:
             entry_side = int(argv[2])
     else:
-        terrain = random.choice(battlemapdata.data.keys())
+        terrain = random.choice(list(battlemapdata.data.keys()))
     if entry_side is None:
         if terrain == "Tower":
             entry_side = 5

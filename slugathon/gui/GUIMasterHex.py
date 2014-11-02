@@ -3,7 +3,7 @@ __license__ = "GNU GPL v2"
 
 
 import math
-from sys import maxint
+from sys import maxsize
 
 import cairo
 import pango
@@ -52,7 +52,7 @@ class GUIMasterHex(object):
         bordering hexes.
         """
         self.vertexes = []
-        for unused in xrange(6):
+        for unused in range(6):
             self.vertexes.append(None)
         cx = self.cx
         cy = self.cy
@@ -76,10 +76,10 @@ class GUIMasterHex(object):
     def bounding_rect(self):
         """Return the bounding rectangle (x, y, width, height) of this hex."""
         scale = self.guiboard.scale
-        min_x = maxint
-        max_x = -maxint
-        min_y = maxint
-        max_y = -maxint
+        min_x = maxsize
+        max_x = -maxsize
+        min_y = maxsize
+        max_y = -maxsize
         for x, y in self.vertexes:
             min_x = min(min_x, x)
             min_y = min(min_y, y)
@@ -137,7 +137,7 @@ class GUIMasterHex(object):
         hex1 = self.masterhex
         vertexes = self.vertexes
         ap = []
-        for i in xrange(6):
+        for i in range(6):
             gp = [vertexes[i]]
             n = (i + 1) % 6
             if hex1.exits[i] is not None:

@@ -136,8 +136,7 @@ def test_scale_polygon():
 
 
 def test_towers():
-    labels = board.get_tower_labels()
-    labels.sort()
+    labels = sorted(board.get_tower_labels())
     assert labels == [100, 200, 300, 400, 500, 600]
 
 

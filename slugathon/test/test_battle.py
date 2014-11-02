@@ -3,7 +3,7 @@ __license__ = "GNU GPL v2"
 
 
 import time
-from sys import maxint
+from sys import maxsize
 
 from slugathon.game import Game, Phase, Creature, Legion
 
@@ -28,14 +28,14 @@ class TestBattle(object):
         self.player0.split_legion("Rd01", "Rd02",
                                   ["Titan", "Centaur", "Ogre", "Gargoyle"],
                                   ["Angel", "Centaur", "Ogre", "Gargoyle"])
-        for markerid, legion in self.player0.markerid_to_legion.iteritems():
+        for markerid, legion in self.player0.markerid_to_legion.items():
             legion.player = self.player0
         self.rd01 = self.player0.markerid_to_legion["Rd01"]
         self.player1.pick_marker("Bu02")
         self.player1.split_legion("Bu01", "Bu02",
                                   ["Titan", "Centaur", "Ogre", "Gargoyle"],
                                   ["Angel", "Centaur", "Ogre", "Gargoyle"])
-        for markerid, legion in self.player1.markerid_to_legion.iteritems():
+        for markerid, legion in self.player1.markerid_to_legion.items():
             legion.player = self.player1
         self.bu01 = self.player1.markerid_to_legion["Bu01"]
 
@@ -46,7 +46,7 @@ class TestBattle(object):
         assert self.game.battle_turn == 1
         assert self.game.defender_legion.markerid == "Rd01"
         assert self.game.attacker_legion.markerid == "Bu01"
-        assert self.game.battle_phase == Phase.MANEUVER
+        assert self.game.battle_phase is Phase.PhaseBattle.MANEUVER
         assert self.game.battle_active_player == \
             self.game.defender_legion.player
 
@@ -60,7 +60,7 @@ class TestBattle(object):
         assert self.game.battle_hex_entry_cost(titan, "Tower", "Wall") == 2
         assert self.game.battle_hex_entry_cost(titan, "Drift", None) == 2
         assert self.game.battle_hex_entry_cost(titan, "Volcano", None) == \
-            maxint
+            maxsize
         lion = Creature.Creature("Lion")
         assert self.game.battle_hex_entry_cost(lion, "Bramble", None) == 2
         assert self.game.battle_hex_entry_cost(lion, "Plain", None) == 1
@@ -70,7 +70,7 @@ class TestBattle(object):
         assert self.game.battle_hex_entry_cost(lion, "Tower", "Wall") == 2
         assert self.game.battle_hex_entry_cost(lion, "Drift", None) == 2
         assert self.game.battle_hex_entry_cost(lion, "Volcano", None) == \
-            maxint
+            maxsize
         giant = Creature.Creature("Giant")
         assert self.game.battle_hex_entry_cost(giant, "Bramble", None) == 2
         assert self.game.battle_hex_entry_cost(giant, "Plain", None) == 1
@@ -80,7 +80,7 @@ class TestBattle(object):
         assert self.game.battle_hex_entry_cost(giant, "Tower", "Wall") == 2
         assert self.game.battle_hex_entry_cost(giant, "Drift", None) == 1
         assert self.game.battle_hex_entry_cost(giant, "Volcano", None) == \
-            maxint
+            maxsize
         dragon = Creature.Creature("Dragon")
         assert self.game.battle_hex_entry_cost(dragon, "Bramble", None) == 2
         assert self.game.battle_hex_entry_cost(dragon, "Plain", None) == 1
@@ -337,7 +337,7 @@ class TestBattle(object):
         assert gargoyle2.find_target_hexlabels() == set()
         assert gargoyle2.engaged_enemies == set()
 
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         assert titan2.find_target_hexlabels() == set(["C1"])
         assert titan2.number_of_dice(gargoyle1) == 6
         assert titan2.strike_number(gargoyle1) == 3
@@ -353,7 +353,7 @@ class TestBattle(object):
         assert gargoyle2.engaged_enemies == set()
 
         game.battle_active_legion = defender
-        game.battle_phase = Phase.COUNTERSTRIKE
+        game.battle_phase = Phase.PhaseBattle.COUNTERSTRIKE
         assert titan1.find_target_hexlabels() == set()
         assert titan1.engaged_enemies == set()
         assert ogre1.find_target_hexlabels() == set()
@@ -371,7 +371,7 @@ class TestBattle(object):
 
         game.clear_battle_flags()
         game.battle_turn = 2
-        game.battle_phase = Phase.MANEUVER
+        game.battle_phase = Phase.PhaseBattle.MANEUVER
         assert game.find_battle_moves(titan1)
         assert game.find_battle_moves(ogre1)
         assert not game.find_battle_moves(centaur1)
@@ -379,7 +379,7 @@ class TestBattle(object):
         titan1.move("D4")
         ogre1.move("D3")
 
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         assert titan1.find_target_hexlabels() == set(["C3"])
         assert titan1.engaged_enemies == set([gargoyle2])
         assert titan1.number_of_dice(gargoyle2) == 6
@@ -402,7 +402,7 @@ class TestBattle(object):
         assert gargoyle1.strike_number(titan2) == 5
 
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.COUNTERSTRIKE
+        game.battle_phase = Phase.PhaseBattle.COUNTERSTRIKE
         assert titan2.find_target_hexlabels() == set(["C1"])
         assert titan2.engaged_enemies == set([gargoyle1])
         assert titan2.number_of_dice(gargoyle1) == 6
@@ -440,10 +440,10 @@ class TestBattle(object):
         game._init_battle(rd02, bu02)
         troll1.move("B2")
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.MANEUVER
+        game.battle_phase = Phase.PhaseBattle.MANEUVER
         angel1.move("C2")
         ranger1.move("C1")
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         assert angel1.engaged_enemies == set([troll1])
         assert angel1.number_of_dice(troll1) == 6
         assert angel1.strike_number(troll1) == 2
@@ -457,10 +457,10 @@ class TestBattle(object):
         game._init_battle(rd02, bu02)
         troll1.move("B2")
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.MANEUVER
+        game.battle_phase = Phase.PhaseBattle.MANEUVER
         angel1.move("C2")
         ranger1.move("C1")
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         assert angel1.engaged_enemies == set([troll1])
         assert angel1.number_of_dice(troll1) == 6
         assert angel1.strike_number(troll1) == 2
@@ -474,10 +474,10 @@ class TestBattle(object):
         game._init_battle(rd02, bu02)
         troll1.move("B2")
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.MANEUVER
+        game.battle_phase = Phase.PhaseBattle.MANEUVER
         angel1.move("C2")
         ranger1.move("C1")
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         assert angel1.engaged_enemies == set([troll1])
         assert angel1.number_of_dice(troll1) == 6
         assert angel1.strike_number(troll1) == 2
@@ -569,7 +569,7 @@ class TestBattle(object):
 
         attacker = self.game.attacker_legion
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         ogre2 = attacker.sorted_creatures[5]
         assert ogre2.find_target_hexlabels() == set()
         assert ogre2.engaged_enemies == set()
@@ -618,7 +618,7 @@ class TestBattle(object):
         assert gorgon2.strike_number(gorgon1) == 4
 
         game.battle_active_legion = defender
-        game.battle_phase = Phase.COUNTERSTRIKE
+        game.battle_phase = Phase.PhaseBattle.COUNTERSTRIKE
         assert gargoyle1.engaged_enemies == set([gargoyle2])
         assert gargoyle1.number_of_dice(gargoyle2) == 4
         assert gargoyle1.strike_number(gargoyle2) == 4
@@ -631,7 +631,7 @@ class TestBattle(object):
 
         centaur1.move("A3")
         titan1.move("F2")
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         assert centaur1.engaged_enemies == set([ogre2, gargoyle2])
         assert centaur1.number_of_dice(ogre2) == 3
         assert centaur1.strike_number(ogre2) == 3
@@ -698,7 +698,7 @@ class TestBattle(object):
 
         attacker = self.game.attacker_legion
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         ogre2 = attacker.sorted_creatures[5]
         assert ogre2.find_target_hexlabels() == set()
         assert ogre2.engaged_enemies == set()
@@ -749,7 +749,7 @@ class TestBattle(object):
         assert gorgon2.strike_number(centaur1) == 6
 
         game.battle_active_legion = defender
-        game.battle_phase = Phase.COUNTERSTRIKE
+        game.battle_phase = Phase.PhaseBattle.COUNTERSTRIKE
         assert gargoyle1.engaged_enemies == set()
         assert gorgon1.engaged_enemies == set()
         assert ranger1.engaged_enemies == set([centaur2])
@@ -802,7 +802,7 @@ class TestBattle(object):
 
         attacker = self.game.attacker_legion
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         ogre2 = attacker.sorted_creatures[5]
         assert ogre2.find_target_hexlabels() == set()
         assert ogre2.engaged_enemies == set()
@@ -845,7 +845,7 @@ class TestBattle(object):
         assert gorgon2.engaged_enemies == set()
 
         game.battle_active_legion = defender
-        game.battle_phase = Phase.COUNTERSTRIKE
+        game.battle_phase = Phase.PhaseBattle.COUNTERSTRIKE
         assert gargoyle1.engaged_enemies == set()
         assert ranger1.engaged_enemies == set()
         assert ranger1.find_target_hexlabels() == set()
@@ -855,7 +855,7 @@ class TestBattle(object):
         assert ogre1.number_of_dice(ogre2) == 6
         assert ogre1.strike_number(ogre2) == 3
 
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         assert ranger1.find_target_hexlabels() == set(["E1", "F1"])
         assert ranger1.number_of_dice(centaur2) == 2
         assert ranger1.strike_number(centaur2) == 5
@@ -902,7 +902,7 @@ class TestBattle(object):
 
         attacker = self.game.attacker_legion
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         ogre2 = attacker.sorted_creatures[4]
         assert ogre2.find_target_hexlabels() == set()
         assert ogre2.engaged_enemies == set()
@@ -932,13 +932,13 @@ class TestBattle(object):
         assert ranger2.find_target_hexlabels() == set()
 
         game.battle_active_legion = defender
-        game.battle_phase = Phase.COUNTERSTRIKE
+        game.battle_phase = Phase.PhaseBattle.COUNTERSTRIKE
         assert gargoyle1.engaged_enemies == set()
         assert ranger1.engaged_enemies == set()
         assert ranger1.find_target_hexlabels() == set()
         assert ogre1.engaged_enemies == set()
 
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         assert ranger1.find_target_hexlabels() == set(["A1", "A2"])
         assert ranger1.number_of_dice(gargoyle2) == 2
         assert ranger1.strike_number(gargoyle2) == 3
@@ -992,7 +992,7 @@ class TestBattle(object):
 
         attacker = self.game.attacker_legion
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         ogre2 = attacker.sorted_creatures[5]
         assert ogre2.find_target_hexlabels() == set()
         assert ogre2.engaged_enemies == set()
@@ -1037,7 +1037,7 @@ class TestBattle(object):
         assert unicorn2.strike_number(lion1) == 3
 
         game.battle_active_legion = defender
-        game.battle_phase = Phase.COUNTERSTRIKE
+        game.battle_phase = Phase.PhaseBattle.COUNTERSTRIKE
         assert gargoyle1.engaged_enemies == set([centaur2])
         assert dragon1.engaged_enemies == set([centaur2])
         assert dragon1.number_of_dice(centaur2) == 12
@@ -1087,7 +1087,7 @@ class TestBattle(object):
 
         attacker = self.game.attacker_legion
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         ogre2 = attacker.sorted_creatures[5]
         assert ogre2.find_target_hexlabels() == set()
         assert ogre2.engaged_enemies == set()
@@ -1120,7 +1120,7 @@ class TestBattle(object):
         assert griffon2.engaged_enemies == set()
 
         game.battle_active_legion = defender
-        game.battle_phase = Phase.COUNTERSTRIKE
+        game.battle_phase = Phase.PhaseBattle.COUNTERSTRIKE
         assert gargoyle1.engaged_enemies == set()
         assert hydra1.engaged_enemies == set()
         assert hydra1.find_target_hexlabels() == set()
@@ -1128,7 +1128,7 @@ class TestBattle(object):
         assert ogre1.engaged_enemies == set()
         assert titan1.engaged_enemies == set()
 
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         assert hydra1.find_target_hexlabels() == set(["B3", "B4", "C2"])
         assert hydra1.number_of_dice(lion2) == 5
         assert hydra1.strike_number(lion2) == 4
@@ -1138,15 +1138,15 @@ class TestBattle(object):
         assert hydra1.strike_number(ogre2) == 3
 
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.COUNTERSTRIKE
-        game.battle_phase = Phase.MOVE
+        game.battle_phase = Phase.PhaseBattle.COUNTERSTRIKE
+        game.battle_phase = Phase.PhaseMaster.MOVE
         griffon2.move("C5")
         centaur2.move("F3")
         lion2.move("C4")
         gargoyle2.move("E3")
         ogre2.move("C3")
         titan2.move("B2")
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         assert griffon2.engaged_enemies == set([centaur1, ogre1])
         assert griffon2.number_of_dice(centaur1) == 5
         assert griffon2.strike_number(centaur1) == 4
@@ -1212,7 +1212,7 @@ class TestBattle(object):
 
         attacker = self.game.attacker_legion
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         ogre2 = attacker.sorted_creatures[5]
         assert ogre2.find_target_hexlabels() == set()
         assert ogre2.engaged_enemies == set()
@@ -1245,7 +1245,7 @@ class TestBattle(object):
         assert griffon2.engaged_enemies == set()
 
         game.battle_active_legion = defender
-        game.battle_phase = Phase.COUNTERSTRIKE
+        game.battle_phase = Phase.PhaseBattle.COUNTERSTRIKE
         assert gargoyle1.engaged_enemies == set()
         assert ranger1.engaged_enemies == set()
         assert ranger1.find_target_hexlabels() == set()
@@ -1253,7 +1253,7 @@ class TestBattle(object):
         assert ogre1.engaged_enemies == set()
         assert titan1.engaged_enemies == set()
 
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         assert ranger1.find_target_hexlabels() == set(["B3", "C2"])
         assert ranger1.number_of_dice(lion2) == 2
         assert ranger1.strike_number(lion2) == 3
@@ -1261,15 +1261,15 @@ class TestBattle(object):
         assert ranger1.strike_number(ogre2) == 2
 
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.COUNTERSTRIKE
-        game.battle_phase = Phase.MOVE
+        game.battle_phase = Phase.PhaseBattle.COUNTERSTRIKE
+        game.battle_phase = Phase.PhaseMaster.MOVE
         griffon2.move("C5")
         centaur2.move("F3")
         lion2.move("C4")
         gargoyle2.move("E3")
         ogre2.move("C3")
         titan2.move("B2")
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         assert griffon2.engaged_enemies == set([centaur1, ogre1])
         assert griffon2.number_of_dice(centaur1) == 5
         assert griffon2.strike_number(centaur1) == 4
@@ -1332,7 +1332,7 @@ class TestBattle(object):
 
         attacker = self.game.attacker_legion
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         ogre2 = attacker.sorted_creatures[5]
         assert ogre2.find_target_hexlabels() == set()
         assert ogre2.engaged_enemies == set()
@@ -1365,7 +1365,7 @@ class TestBattle(object):
         assert ranger2.engaged_enemies == set()
 
         game.battle_active_legion = defender
-        game.battle_phase = Phase.COUNTERSTRIKE
+        game.battle_phase = Phase.PhaseBattle.COUNTERSTRIKE
         assert gargoyle1.engaged_enemies == set([gargoyle2, lion2])
         assert ranger1.engaged_enemies == set()
         assert ranger1.find_target_hexlabels() == set()
@@ -1373,7 +1373,7 @@ class TestBattle(object):
         assert ogre1.engaged_enemies == set()
         assert titan1.engaged_enemies == set()
 
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         assert ranger1.find_target_hexlabels() == set(["B3", "C2"])
         assert ranger1.number_of_dice(lion2) == 2
         assert ranger1.strike_number(lion2) == 3
@@ -1381,15 +1381,15 @@ class TestBattle(object):
         assert ranger1.strike_number(ogre2) == 2
 
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.COUNTERSTRIKE
-        game.battle_phase = Phase.MOVE
+        game.battle_phase = Phase.PhaseBattle.COUNTERSTRIKE
+        game.battle_phase = Phase.PhaseMaster.MOVE
         ranger2.move("C5")
         centaur2.move("F3")
         lion2.move("C4")
         gargoyle2.move("E3")
         ogre2.move("C3")
         titan2.move("B2")
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
         assert ranger2.engaged_enemies == set([centaur1, ogre1, gargoyle1])
         assert ranger2.number_of_dice(centaur1) == 4
         assert ranger2.strike_number(centaur1) == 4
@@ -1456,7 +1456,7 @@ class TestBattle(object):
         assert giant1.engaged_enemies == set()
 
         game.done_with_maneuvers("p0")
-        assert game.battle_phase == Phase.STRIKE
+        assert game.battle_phase is Phase.PhaseBattle.STRIKE
         assert gargoyle1.hits == 1
         assert centaur1.hits == 0
         assert titan1.hits == 0
@@ -1467,7 +1467,7 @@ class TestBattle(object):
         attacker = self.game.attacker_legion
         assert attacker.markerid == "Bu01"
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.MOVE
+        game.battle_phase = Phase.PhaseBattle.MOVE
         ogre2 = attacker.sorted_creatures[5]
         assert ogre2.find_target_hexlabels() == set()
         assert ogre2.engaged_enemies == set()
@@ -1507,10 +1507,10 @@ class TestBattle(object):
         assert titan2.hits == 0
         assert warbear2.hits == 0
         assert colossus2.hits == 0
-        assert game.battle_phase == Phase.STRIKE
+        assert game.battle_phase is Phase.PhaseBattle.STRIKE
 
         game.battle_active_legion = defender
-        game.battle_phase = Phase.COUNTERSTRIKE
+        game.battle_phase = Phase.PhaseBattle.COUNTERSTRIKE
         assert gargoyle1.engaged_enemies == set()
         assert giant1.engaged_enemies == set()
         assert giant1.find_target_hexlabels() == set()
@@ -1551,10 +1551,10 @@ class TestBattle(object):
         gargoyle1.move("D2")
         gargoyle2.move("C2")
         game.battle_active_legion = attacker
-        game.battle_phase = Phase.MANEUVER
+        game.battle_phase = Phase.PhaseBattle.MANEUVER
         titan.move("C1")
 
-        game.battle_phase = Phase.STRIKE
+        game.battle_phase = Phase.PhaseBattle.STRIKE
 
         assert titan.engaged_enemies == set([ogre, gargoyle1, gargoyle2])
         assert titan.number_of_dice(ogre) == 6

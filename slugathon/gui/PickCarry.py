@@ -123,9 +123,10 @@ if __name__ == "__main__":
     centaur2.move("D3")
     gargoyle2 = attacker.creatures[3]
     gargoyle2.move("D4")
-    game.battle_phase = Phase.STRIKE
+    game.battle_phase = Phase.PhaseBattle.STRIKE
 
-    def my_callback((creature, carries)):
+    def my_callback(result):
+        creature, carries = result
         logging.info("carry %d hits to %s" % (carries, creature))
         reactor.stop()
 

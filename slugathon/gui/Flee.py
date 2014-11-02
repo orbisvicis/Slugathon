@@ -149,7 +149,8 @@ if __name__ == "__main__":
     defender_legion = Legion.Legion(defender_player, "Rd01",
                                     defender_creatures, 1)
 
-    def my_callback((attacker, defender, fled)):
+    def my_callback(result):
+        attacker, defender, fled = result
         logging.info("fled is %s", fled)
         reactor.stop()
 

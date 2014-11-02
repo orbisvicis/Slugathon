@@ -118,7 +118,8 @@ if __name__ == "__main__":
     creature_names = ["Titan", "Dragon", "Dragon", "Minotaur", "Minotaur"]
     creatures = Creature.n2c(creature_names)
 
-    def my_callback((legion, creature, recruiter_names)):
+    def my_callback(result):
+        legion, creature, recruiter_names = result
         logging.info("%s recruited %s %s", legion, creature, recruiter_names)
         guiutils.exit()
 

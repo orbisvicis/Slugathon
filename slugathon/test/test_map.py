@@ -1,7 +1,7 @@
 __copyright__ = "Copyright (c) 2005-2011 David Ripton"
 __license__ = "GNU GPL v2"
 
-from sys import maxint
+from sys import maxsize
 
 from slugathon.game import BattleMap
 from slugathon.util import guiutils
@@ -34,7 +34,7 @@ def test_all_labels():
 def test_default_hex_init():
     assert hex1.terrain == "Plain"
     assert hex1.elevation == 0
-    for ii in xrange(6):
+    for ii in range(6):
         assert hex1.borders[ii] is None
         assert hex6.borders[ii] is None
 
@@ -155,8 +155,8 @@ def test_range():
     assert map1.range("A2", "A1") == 2
     assert map1.range("A1", "B1") == 2
     assert map1.range("A1", "B2") == 2
-    assert map1.range("ATTACKER", "A1") == maxint
-    assert map1.range("A1", "ATTACKER") == maxint
+    assert map1.range("ATTACKER", "A1") == maxsize
+    assert map1.range("A1", "ATTACKER") == maxsize
     assert map1.range("A1", "A3") == 3
     assert map1.range("A1", "B3") == 3
     assert map1.range("A1", "C1") == 3
@@ -181,8 +181,8 @@ def test_range():
     assert map1.range("A1", "F4") == 6
     assert map1.range("A1", "E5") == 6
     assert map1.range("A1", "D6") == 6
-    assert map1.range("A1", "DEFENDER") == maxint
-    assert map1.range("DEFENDER", "A1") == maxint
+    assert map1.range("A1", "DEFENDER") == maxsize
+    assert map1.range("DEFENDER", "A1") == maxsize
     assert map1.range("ATTACKER", "A1", True) == 7
     assert map1.range("A1", "ATTACKER", True) == 7
     assert map1.range("A1", "DEFENDER", True) == 2
