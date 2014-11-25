@@ -1,0 +1,18 @@
+Incorporate stringutils.Identifier serverside to validate user and game names
+    superclass UniqueFilePasswordDB,UniqueNoPassword, providing name validation
+Fix clientside bug introduced in 711fc517bf863503aa0fcadfba7c7c49a1ce3b26 - "Allow duplicate inactive game names":
+    client assumes game in incorrect category, displays incorrect window
+Complete Gtk3 port
+    resume with gui.TurnTrack.py, awaiting Marker.py rewrite
+        switch to Gtk3 "draw" signal
+        redraw invalidated regions only (using Marker rewrite)
+        simplify redrawing callbacks by using window_invalidate_region
+Reintroduce python2 compatibility with six (module) and __future__ imports
+    since twisted in python3 lacks the following modules:
+        twisted.cred
+        twisted.internet.utils
+        twisted.spread
+Rewrite Marker and similar classes (Chit,...?)
+    Solve glyph width/height ratio problem (varies with scale/dpi)
+Allow rescaling GUIMasterHex (proportionally)
+Rewrite log window to match that of colossus'
