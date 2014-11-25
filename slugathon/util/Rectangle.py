@@ -3,8 +3,11 @@ __license__ = "GNU GPL v3"
 
 
 import functools
+import numbers
 
 import unittest
+import random
+import math
 
 from slugathon.util.MIMD import MIMD, G, O, R
 from slugathon.util.Vector import Vector, VectorOperator, VectorArgs, VectorError
@@ -29,7 +32,7 @@ class RectangleErrorIndex(RectangleError, IndexError):
 
 class RectangleErrors(StrValueEnum):
     error_type          = "Rectangle required"
-    error_index_type    = "index components must be integers"
+    error_index_type    = "index components must be real numbers"
     error_index_range   = "index out of range"
 
 
@@ -156,29 +159,62 @@ class Rectangle(object):
 
     def __getitem__(self, key):
         """ 2x2 matrix of Vectors, row-major order
+            Despite the intuition that keys should wrap around at values less
+            than zero, ie mapping [-1,-0] -> [+0,+1], there exist three reasons
+            to bump that range to [-2,-1]:
+                * With a wraparound range [-1,-0], there exists no negative
+                  integer key that can map to the top-right corner in R², ie:
+                    for all negative numbers a:
+                      a `mod` 2 != (+1,+1) and equivalences:
+                                   (-0,-0), (-0,+1), (+1,-0)
+                * Negative zero only exists for floats. It is both inconvenient
+                  and confusing that the keys -0 and -0.0 would index different
+                  values (0 and 1 respectively)
+                * compatibility with existing slice notation (wrap-around
+                  starts at -1)
+            Think of the indexing algorithm as continuously folding the number
+            line accordion-style over the unit interval, though for sanity's
+            sake only a subset of inputs are allowed:
+                -3.0    +1.0
+                -2.5    +0.5
+                -2.0    +0.0
+                -1.5    +0.5
+                -1.0    +1.0
+                -0.5    +0.5
+                +0.0    +0.0
+                +0.5    +0.5
+                +1.0    +1.0
+                +1.5    +0.5
+                +2.0    +0.0
+                +2.5    +0.5
+                +3.0    +1.0
         """
-        if isinstance(key, int):
+        if isinstance(key, numbers.Real):
             key = Vector(*divmod(key, 2))
         elif isinstance(key, slice):
             key = Vector(key.start, key.stop)
         elif not isinstance(key, Vector):
             key = Vector.from_iterable(key)
         for i in key:
-            if not isinstance(i, int):
+            if not isinstance(i, numbers.Real):
                 raise RectangleErrorType(RectangleErrors.error_index_type)
-            if i not in range(-2,2):
+            if not ((0 <= i <= 1) or (-2 <= i <= -1)):
                 raise RectangleErrorIndex(RectangleErrors.error_index_range)
         key =\
-            [ bool(i+2 if i < 0 else i)
+            [ abs(((i + 1) % 2) - 1)
               for i
               in key
             ]
         offset =\
-            [ d if i else 0
+            [ i*d
               for i,d
               in zip(key, self.size)
             ]
         return self.location + offset
+
+    @VectorArgs(2, copy=False)
+    def __setitem__(self, key, value):
+        self.location += (value - self[key])
 
     def __iter__(self):
         return RectangleIterator(self)
@@ -313,6 +349,60 @@ class Rectangle(object):
         self *= (1/other)
         return self
 
+    @RectangleOperator(error=True)
+    def scale_inscribe(self, other):
+        # parallel line
+        if  (   bool(self.size.x) != bool(self.size.y)
+            and bool(other.size.x) != bool(other.size.y)
+            and self.size.dot(other.size)
+            ):
+            ratio = lambda w,h: w/h if h else float("nan")
+            axisi = 1 if ratio(*self.size) >= ratio(*other.size) else 0
+        # [not a point] and rectangle
+        elif (   (self.size.x or self.size.y)
+             and other.area
+             ):
+            ratio = lambda w,h: w/h if h else float("inf")
+            axisi = 0 if ratio(*self.size) >= ratio(*other.size) else 1
+        # point and [not a point]
+        elif (   (not self.size.x and not self.size.y)
+             and (other.size.x or other.size.y)
+             ):
+            return float("NaN")
+        # * and point
+        # rectangle and line
+        # orthogonal lines
+        else:
+            self *= 0
+            return 0
+        scale = other.size[axisi] / self.size[axisi]
+        self *= scale
+        return scale
+
+    @RectangleOperator(error=True)
+    def scale_circumscribe(self, other):
+        if not self.size.x and not self.size.y:
+            if not other.size.x and not other.size.y:
+                return 0
+            else:
+                return float("nan")
+        elif bool(self.size.x) != bool(self.size.y):
+            if not other.size.x and not other.size.y:
+                self *= 0
+                return 0
+            elif bool(other.size.x) != bool(other.size.y):
+                if  (  not self.size.x and not other.size.x
+                    or not self.size.y and not other.size.y
+                    ):
+                    return float("nan")
+            else:
+                return float("nan")
+        ratio = lambda w,h: w/h if h else float("nan")
+        axisc = (1 if ratio(*self.size) >= ratio(*other.size) else 0)
+        scale = other.size[axisc] / self.size[axisc]
+        self *= scale
+        return scale
+
 
 class RectangleIterator(object):
     def __init__(self, rectangle):
@@ -330,6 +420,13 @@ class RectangleIterator(object):
 
 
 class TestRectangle(unittest.TestCase):
+    @staticmethod
+    def randrect(a=-100, b=100):
+        return Rectangle\
+            ( (random.randint(a,b), random.randint(a,b))
+            , (random.randint(a,b), random.randint(a,b))
+            )
+
     def setUp(self):
         self.v1_1 = Vector(1,2)
         self.v1_2 = Vector(8,10)
@@ -497,7 +594,10 @@ class TestRectangle(unittest.TestCase):
               ) +
           MIMD( [self.assertRaises]
               , [G(RectangleErrorIndex, lambda k: self.r1[k])]
-              , [-5, 4, slice(0,2), slice(2,2), slice(2,0), slice(0,-3), slice(-3,-3), slice(-3,0)]
+              , [ -4.1, -0.5, 1.5, 3.1
+                , slice(0,1.1), slice(1.1,1.1), slice(1.1,0)
+                , slice(0,-2.1), slice(-2.1,-2.1), slice(-2.1,0)
+                ]
               ) +
           MIMD( [self.assertEqual]
               , [list(self.r1)]
@@ -514,6 +614,28 @@ class TestRectangle(unittest.TestCase):
                                 )
                           ).mapping
                     )
+              )
+        ).apply()
+
+    def test_setitem(self):
+        def test_a(k, v):
+            r1 = self.r1 + v
+            r2 = Rectangle.from_rectangle(self.r1)
+            r2[k] += v
+            self.assertEqual(r1, r2)
+        def test_b(k, v):
+            r2 = Rectangle.from_rectangle(self.r1)
+            r2[k] = v
+            self.assertEqual(r2[k], v)
+            self.assertEqual(r2.size, self.r1.size)
+        ( MIMD( [self.assertRaises]
+              , [G(VectorError, self.r1.__setitem__)]
+              , [0]
+              , [[1,2,3], object()]
+              ) +
+          MIMD( [test_a, test_b]
+              , range(3)
+              , [(10, 100), (-5, -5)]
               )
         ).apply()
 
@@ -712,6 +834,47 @@ class TestRectangle(unittest.TestCase):
               , [self.r1.__imul__(1), self.r1.__itruediv__(1)]
               )
         ).apply()
+
+    def test_scale_inscribe(self):
+        # floating point error
+        delta = 1e-7
+        for i in range(100):
+            r1_1 = self.randrect()
+            r2_1 = self.randrect()
+            r2_2 = Rectangle.from_rectangle(r2_1)
+            scale = r2_1.scale_inscribe(r1_1)
+            msg = "{} -> {} = {}".format(r2_2, r1_1, r2_1)
+            with self.subTest(msg):
+                self.assertEqual(r2_1.location, r2_2.location)
+                if not math.isnan(scale):
+                    self.assertTrue\
+                        (   r1_1.size.x - r2_1.size.x < delta
+                        or  r1_1.size.y - r2_1.size.y < delta
+                        )
+                r2_1.location = r1_1.location
+                r2_1.size.x = max(0, r2_1.size.x - delta)
+                r2_1.size.y = max(0, r2_1.size.y - delta)
+                self.assertTrue(r2_1 <= r1_1)
+
+    def test_scale_circumscribe(self):
+        # floating point error
+        delta = 1e-7
+        for i in range(100):
+            r1_1 = self.randrect()
+            r2_1 = self.randrect()
+            r2_2 = Rectangle.from_rectangle(r2_1)
+            scale = r2_1.scale_circumscribe(r1_1)
+            msg = "{} -> {} = {}".format(r2_2, r1_1, r2_1)
+            with self.subTest(msg):
+                self.assertEqual(r2_1.location, r2_2.location)
+                if not math.isnan(scale):
+                    self.assertTrue\
+                        (   r1_1.size.x - r2_1.size.x < delta
+                        or  r1_1.size.y - r2_1.size.y < delta
+                        )
+                    r2_1.location = r1_1.location
+                    r2_1.size += (delta, delta)
+                    self.assertTrue(r2_1 >= r1_1)
 
 
 if __name__ == "__main__":
