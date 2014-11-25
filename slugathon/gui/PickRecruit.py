@@ -6,7 +6,7 @@ __license__ = "GNU GPL v2"
 
 import logging
 
-import gtk
+from gi.repository import Gtk
 from twisted.internet import defer
 
 from slugathon.gui import Chit, Marker, icon
@@ -22,12 +22,12 @@ def new(playername, legion, mterrain, caretaker, parent):
     return pickrecruit, def1
 
 
-class PickRecruit(gtk.Dialog):
+class PickRecruit(Gtk.Dialog):
 
     """Dialog to pick a recruit."""
 
     def __init__(self, playername, legion, mterrain, caretaker, def1, parent):
-        gtk.Dialog.__init__(self, "PickRecruit - %s" % playername, parent)
+        Gtk.Dialog.__init__(self, "PickRecruit - %s" % playername, parent)
         self.legion = legion
         player = legion.player
         self.deferred = def1
@@ -37,35 +37,35 @@ class PickRecruit(gtk.Dialog):
         self.set_destroy_with_parent(True)
         self.vbox.set_spacing(9)
 
-        legion_name = gtk.Label("Pick recruit for legion %s (%s) in hex %s" % (
+        legion_name = Gtk.Label("Pick recruit for legion %s (%s) in hex %s" % (
                                 legion.markerid,
                                 legion.picname,
                                 legion.hexlabel))
-        self.vbox.pack_start(legion_name)
+        self.vbox.pack_start(legion_name, expand=True, fill=True, padding=0)
 
-        legion_hbox = gtk.HBox(spacing=15)
-        self.vbox.pack_start(legion_hbox)
+        legion_hbox = Gtk.HBox(spacing=15)
+        self.vbox.pack_start(legion_hbox, expand=True, fill=True, padding=0)
 
-        marker_hbox = gtk.HBox()
-        legion_hbox.pack_start(marker_hbox, expand=False)
+        marker_hbox = Gtk.HBox()
+        legion_hbox.pack_start(marker_hbox, expand=False, fill=True, padding=0)
 
-        chits_hbox = gtk.HBox(spacing=3)
-        legion_hbox.pack_start(chits_hbox, expand=False)
+        chits_hbox = Gtk.HBox(spacing=3)
+        legion_hbox.pack_start(chits_hbox, expand=False, fill=True, padding=0)
 
         marker = Marker.Marker(legion, True, scale=20)
         marker_hbox.pack_start(marker.event_box, expand=False,
-                               fill=False)
+                               fill=False, padding=0)
 
         for creature in legion.sorted_living_creatures:
             chit = Chit.Chit(creature, player.color, scale=20)
-            chits_hbox.pack_start(chit.event_box, expand=False)
+            chits_hbox.pack_start(chit.event_box, expand=False, fill=True, padding=0)
 
         recruit_tups = legion.available_recruits_and_recruiters(mterrain,
                                                                 caretaker)
         max_len = max(len(tup) for tup in recruit_tups)
         for tup in recruit_tups:
-            hbox = gtk.HBox()
-            self.vbox.pack_start(hbox)
+            hbox = Gtk.HBox()
+            self.vbox.pack_start(hbox, expand=True, fill=True, padding=0)
             recruit_name = tup[0]
             recruit = Creature.Creature(recruit_name)
             recruiter_names = tup[1:]
@@ -83,16 +83,16 @@ class PickRecruit(gtk.Dialog):
                 chit.recruit = recruit
                 chit.recruiter_names = recruiter_names
                 if ii < len(li) - 2:
-                    hbox.pack_start(chit.event_box, expand=False)
+                    hbox.pack_start(chit.event_box, expand=False, fill=True, padding=0)
                 elif ii == len(li) - 2:
-                    hbox.pack_start(chit.event_box, expand=True)
+                    hbox.pack_start(chit.event_box, expand=True, fill=True, padding=0)
                 else:
-                    hbox.pack_end(chit.event_box, expand=False)
+                    hbox.pack_end(chit.event_box, expand=False, fill=True, padding=0)
                 chit.connect("button-press-event", self.cb_click)
-            label = gtk.Label(caretaker.num_left(creature.name))
-            hbox.pack_end(label, expand=False)
+            label = Gtk.Label(caretaker.num_left(creature.name))
+            hbox.pack_end(label, expand=False, fill=True, padding=0)
 
-        self.add_button("gtk-cancel", gtk.RESPONSE_CANCEL)
+        self.add_button("gtk-cancel", Gtk.ResponseType.CANCEL)
         self.connect("response", self.cb_cancel)
         self.show_all()
 
@@ -136,4 +136,4 @@ if __name__ == "__main__":
     def1.addCallback(my_callback)
     pickrecruit.connect("destroy", guiutils.exit)
 
-    gtk.main()
+    Gtk.main()

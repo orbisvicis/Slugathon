@@ -5,7 +5,7 @@ __license__ = "GNU GPL v2"
 
 
 from twisted.internet import defer
-import gtk
+from gi.repository import Gtk
 
 from slugathon.gui import Chit, Marker, icon
 from slugathon.game import Legion
@@ -18,12 +18,12 @@ def new(playername, legion, parent):
     return splitlegion, def1
 
 
-class SplitLegion(gtk.Dialog):
+class SplitLegion(Gtk.Dialog):
 
     """Dialog to split a legion."""
 
     def __init__(self, playername, legion, def1, parent):
-        gtk.Dialog.__init__(self, "SplitLegion - %s" % playername, parent)
+        Gtk.Dialog.__init__(self, "SplitLegion - %s" % playername, parent)
         self.old_legion = legion
         player = legion.player
         self.deferred = def1
@@ -33,28 +33,28 @@ class SplitLegion(gtk.Dialog):
         self.set_destroy_with_parent(True)
         self.vbox.set_spacing(9)
 
-        legion_name = gtk.Label("Splitting legion %s (%s) in hex %s" % (
+        legion_name = Gtk.Label("Splitting legion %s (%s) in hex %s" % (
                                 legion.markerid,
                                 legion.picname,
                                 legion.hexlabel))
-        self.vbox.pack_start(legion_name)
+        self.vbox.pack_start(legion_name, expand=True, fill=True, padding=0)
 
-        old_hbox = gtk.HBox(spacing=15)
-        self.vbox.pack_start(old_hbox)
-        old_marker_hbox = gtk.HBox()
-        old_hbox.pack_start(old_marker_hbox, expand=False)
-        self.old_chits_hbox = gtk.HBox()
-        old_hbox.pack_start(self.old_chits_hbox, expand=True)
+        old_hbox = Gtk.HBox(spacing=15)
+        self.vbox.pack_start(old_hbox, expand=True, fill=True, padding=0)
+        old_marker_hbox = Gtk.HBox()
+        old_hbox.pack_start(old_marker_hbox, expand=False, fill=True, padding=0)
+        self.old_chits_hbox = Gtk.HBox()
+        old_hbox.pack_start(self.old_chits_hbox, expand=True, fill=True, padding=0)
 
-        new_hbox = gtk.HBox(spacing=15)
-        self.vbox.pack_start(new_hbox)
-        new_marker_hbox = gtk.HBox()
-        new_hbox.pack_start(new_marker_hbox, expand=False)
-        self.new_chits_hbox = gtk.HBox()
-        new_hbox.pack_start(self.new_chits_hbox, expand=True)
+        new_hbox = Gtk.HBox(spacing=15)
+        self.vbox.pack_start(new_hbox, expand=True, fill=True, padding=0)
+        new_marker_hbox = Gtk.HBox()
+        new_hbox.pack_start(new_marker_hbox, expand=False, fill=True, padding=0)
+        self.new_chits_hbox = Gtk.HBox()
+        new_hbox.pack_start(self.new_chits_hbox, expand=True, fill=True, padding=0)
 
         old_marker = Marker.Marker(legion, False, scale=20)
-        old_marker_hbox.pack_start(old_marker.event_box, expand=False)
+        old_marker_hbox.pack_start(old_marker.event_box, expand=False, fill=True, padding=0)
 
         self.new_legion1 = Legion.Legion(player, legion.markerid,
                                          legion.sorted_creatures,
@@ -62,16 +62,16 @@ class SplitLegion(gtk.Dialog):
         self.new_legion2 = Legion.Legion(player, player.selected_markerid,
                                          [], legion.hexlabel)
         self.new_marker = Marker.Marker(self.new_legion2, False, scale=20)
-        new_marker_hbox.pack_start(self.new_marker.event_box, expand=False)
+        new_marker_hbox.pack_start(self.new_marker.event_box, expand=False, fill=True, padding=0)
 
         for creature in legion.sorted_creatures:
             chit = Chit.Chit(creature, player.color, scale=20)
             self.old_chits_hbox.pack_start(chit.event_box, expand=False,
-                                           fill=False)
+                                           fill=False, padding=0)
             chit.connect("button-press-event", self.cb_click)
 
-        self.add_button("gtk-cancel", gtk.RESPONSE_CANCEL)
-        self.ok_button = self.add_button("gtk-ok", gtk.RESPONSE_OK)
+        self.add_button("gtk-cancel", Gtk.ResponseType.CANCEL)
+        self.ok_button = self.add_button("gtk-ok", Gtk.ResponseType.OK)
         self.ok_button.set_sensitive(False)
         self.connect("response", self.cb_response)
 
@@ -91,7 +91,7 @@ class SplitLegion(gtk.Dialog):
             previous_legion = self.new_legion2
             next_legion = self.new_legion1
         prev.remove(eventbox)
-        next.pack_start(eventbox, expand=False, fill=False)
+        next.pack_start(eventbox, expand=False, fill=False, padding=0)
         chit = eventbox.chit
         previous_legion.creatures.remove(chit.creature)
         next_legion.creatures.append(chit.creature)
@@ -101,7 +101,7 @@ class SplitLegion(gtk.Dialog):
 
     def cb_response(self, widget, response_id):
         self.destroy()
-        if response_id == gtk.RESPONSE_OK:
+        if response_id == Gtk.ResponseType.OK:
             self.deferred.callback((self.old_legion, self.new_legion1,
                                     self.new_legion2))
         else:
@@ -127,4 +127,4 @@ if __name__ == "__main__":
     def1.addCallback(guiutils.exit)
     splitlegion.connect("destroy", guiutils.exit)
 
-    gtk.main()
+    Gtk.main()

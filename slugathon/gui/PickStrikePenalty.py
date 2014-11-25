@@ -6,13 +6,13 @@ __license__ = "GNU GPL v2"
 
 import logging
 
-from twisted.internet import gtk2reactor
+from twisted.internet import gireactor
 try:
-    gtk2reactor.install()
+    gireactor.install()
 except AssertionError:
     pass
 from twisted.internet import reactor, defer
-import gtk
+from gi.repository import Gtk
 
 from slugathon.gui import icon
 from slugathon.game import Phase
@@ -26,13 +26,13 @@ def new(playername, game_name, striker, target, parent):
     return pick_strike_penalty, def1
 
 
-class PickStrikePenalty(gtk.Dialog):
+class PickStrikePenalty(Gtk.Dialog):
 
     """Dialog to pick whether to take a strike penalty to allow carrying
     excess hits."""
 
     def __init__(self, playername, game_name, striker, target, def1, parent):
-        gtk.Dialog.__init__(self, "PickStrikePenalty - %s" % playername,
+        Gtk.Dialog.__init__(self, "PickStrikePenalty - %s" % playername,
                             parent)
         self.playername = playername
         self.game_name = game_name
@@ -46,7 +46,7 @@ class PickStrikePenalty(gtk.Dialog):
 
         self.vbox.set_spacing(9)
 
-        label = gtk.Label("Choose strike penalty for %r striking %r?" %
+        label = Gtk.Label("Choose strike penalty for %r striking %r?" %
                           (striker, target))
         self.vbox.add(label)
 
@@ -72,12 +72,12 @@ class PickStrikePenalty(gtk.Dialog):
             else:
                 st = "%d dice at strike number %d, unable to carry" % (
                     num_dice3, strike_number3)
-            button = gtk.Button(st)
-            self.vbox.pack_start(button)
+            button = Gtk.Button(st)
+            self.vbox.pack_start(button, expand=True, fill=True, padding=0)
             button.tup = tup
             button.connect("button-press-event", self.cb_click)
 
-        self.add_button("gtk-cancel", gtk.RESPONSE_CANCEL)
+        self.add_button("gtk-cancel", Gtk.ResponseType.CANCEL)
         self.connect("response", self.cb_cancel)
 
         self.show_all()

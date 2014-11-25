@@ -7,13 +7,13 @@ __license__ = "GNU GPL v2"
 import collections
 import logging
 
-from twisted.internet import gtk2reactor
+from twisted.internet import gireactor
 try:
-    gtk2reactor.install()
+    gireactor.install()
 except AssertionError:
     pass
 from twisted.internet import reactor, defer
-import gtk
+from gi.repository import Gtk, GdkPixbuf
 
 from slugathon.gui import icon
 from slugathon.util import fileutils
@@ -46,13 +46,13 @@ def sorted_markers(markers):
     return [marker for unused, marker in augmented]
 
 
-class PickMarker(gtk.Dialog):
+class PickMarker(Gtk.Dialog):
 
     """Dialog to pick a legion marker."""
 
     def __init__(self, playername, game_name, markers_left, def1, parent):
         title = "PickMarker - %s" % playername
-        gtk.Dialog.__init__(self, title, parent)
+        Gtk.Dialog.__init__(self, title, parent)
         self.playername = playername
         self.game_name = game_name
         self.deferred = def1
@@ -63,18 +63,18 @@ class PickMarker(gtk.Dialog):
         previous_color = ""
         hbox = None
         for ii, button_name in enumerate(sorted_markers(markers_left)):
-            button = gtk.Button()
+            button = Gtk.Button()
             button.tag = button_name
-            pixbuf = gtk.gdk.pixbuf_new_from_file(fileutils.basedir(
-                                                  "images/legion/%s.png" %
-                                                  button_name))
-            image = gtk.Image()
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file\
+                ( fileutils.basedir("images/legion/{}.png".format(button_name))
+                )
+            image = Gtk.Image()
             image.set_from_pixbuf(pixbuf)
             button.add(image)
             button.connect("button-press-event", self.cb_click)
             if button_name[:2] != previous_color:
                 previous_color = button_name[:2]
-                hbox = gtk.HBox()
+                hbox = Gtk.HBox()
                 self.vbox.add(hbox)
             hbox.add(button)
 

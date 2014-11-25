@@ -11,12 +11,11 @@ import sys
 import time
 import logging
 
-from twisted.internet import gtk2reactor
-gtk2reactor.install()
+from twisted.internet import gireactor
+gireactor.install()
 from twisted.internet import reactor, utils, defer
 from twisted.python import log
-import gtk
-import gobject
+from gi.repository import Gtk, GObject
 
 from slugathon.gui import Client, icon
 from slugathon.util import guiutils, prefs
@@ -25,13 +24,13 @@ from slugathon.util import guiutils, prefs
 defer.setDebugging(True)
 
 
-class Connect(gtk.Window):
+class Connect(Gtk.Window):
 
     """GUI for connecting to a server."""
 
     def __init__(self, playername, password, server_name, server_port,
                  connect_now, log_path):
-        gtk.Window.__init__(self)
+        Gtk.Window.__init__(self)
 
         self.playernames = set()
         self.server_names = set()
@@ -40,59 +39,59 @@ class Connect(gtk.Window):
         self.set_title("Slugathon - Connect")
         self.set_default_size(400, -1)
 
-        vbox1 = gtk.VBox()
+        vbox1 = Gtk.VBox()
         self.add(vbox1)
 
-        hbox1 = gtk.HBox(homogeneous=True)
+        hbox1 = Gtk.HBox(homogeneous=True)
         vbox1.pack_start(hbox1, expand=False)
-        label1 = gtk.Label("Player name")
+        label1 = Gtk.Label("Player name")
         hbox1.pack_start(label1, expand=False)
-        self.playername_comboboxentry = gtk.ComboBoxEntry()
+        self.playername_comboboxentry = Gtk.ComboBoxEntry()
         hbox1.pack_start(self.playername_comboboxentry, expand=False)
 
-        hbox2 = gtk.HBox(homogeneous=True)
+        hbox2 = Gtk.HBox(homogeneous=True)
         vbox1.pack_start(hbox2, expand=False)
-        label2 = gtk.Label("Password")
+        label2 = Gtk.Label("Password")
         hbox2.pack_start(label2, expand=False)
-        self.password_entry = gtk.Entry()
+        self.password_entry = Gtk.Entry()
         self.password_entry.set_visibility(False)
         hbox2.pack_start(self.password_entry, expand=False)
 
-        hbox3 = gtk.HBox(homogeneous=True)
+        hbox3 = Gtk.HBox(homogeneous=True)
         vbox1.pack_start(hbox3, expand=False)
-        label3 = gtk.Label("Server name")
+        label3 = Gtk.Label("Server name")
         hbox3.pack_start(label3, expand=False)
-        self.server_name_comboboxentry = gtk.ComboBoxEntry()
+        self.server_name_comboboxentry = Gtk.ComboBoxEntry()
         hbox3.pack_start(self.server_name_comboboxentry, expand=False)
 
-        hbox4 = gtk.HBox(homogeneous=True)
+        hbox4 = Gtk.HBox(homogeneous=True)
         vbox1.pack_start(hbox4, expand=False)
-        label4 = gtk.Label("Server port")
+        label4 = Gtk.Label("Server port")
         hbox4.pack_start(label4, expand=False)
-        self.server_port_comboboxentry = gtk.ComboBoxEntry()
+        self.server_port_comboboxentry = Gtk.ComboBoxEntry()
         hbox4.pack_start(self.server_port_comboboxentry, expand=False)
 
-        connect_button = gtk.Button("Connect to server")
+        connect_button = Gtk.Button("Connect to server")
         connect_button.connect("button-press-event",
                                self.cb_connect_button_clicked)
         vbox1.pack_start(connect_button, expand=False)
 
-        hseparator1 = gtk.HSeparator()
+        hseparator1 = Gtk.HSeparator()
         vbox1.pack_start(hseparator1, expand=False)
 
-        start_server_button = gtk.Button("Start local server")
+        start_server_button = Gtk.Button("Start local server")
         start_server_button.connect("button-press-event",
                                     self.cb_start_server_button_clicked)
         vbox1.pack_start(start_server_button, expand=False)
 
-        hseparator2 = gtk.HSeparator()
+        hseparator2 = Gtk.HSeparator()
         vbox1.pack_start(hseparator2, expand=False)
 
-        self.status_textview = gtk.TextView()
+        self.status_textview = Gtk.TextView()
         vbox1.pack_start(self.status_textview, expand=False)
         self.status_text_norm = self.status_textview.get_modifier_style()
         self.status_text_warn = self.status_text_norm.copy()
-        self.status_text_warn.text[gtk.STATE_NORMAL] = gtk.gdk.color_parse("red")
+        self.status_text_warn.text[Gtk.STATE_NORMAL] = Gtk.gdk.color_parse("red")
 
         self._init_playernames(playername)
         self._init_password(password)
@@ -138,7 +137,7 @@ class Connect(gtk.Window):
         if not playername:
             playername = prefs.last_playername()
         self.playernames.add(playername)
-        store = gtk.ListStore(gobject.TYPE_STRING)
+        store = Gtk.ListStore(GObject.TYPE_STRING)
         active_index = 0
         for index, name in enumerate(sorted(self.playernames)):
             store.append([name])
@@ -167,7 +166,7 @@ class Connect(gtk.Window):
         else:
             server_port = last_server_port
 
-        namestore = gtk.ListStore(gobject.TYPE_STRING)
+        namestore = Gtk.ListStore(GObject.TYPE_STRING)
         active_index = 0
         for index, name in enumerate(sorted(self.server_names)):
             namestore.append([name])
@@ -178,7 +177,7 @@ class Connect(gtk.Window):
         self.server_name_comboboxentry.set_active(active_index)
 
         active_index = 0
-        portstore = gtk.ListStore(gobject.TYPE_STRING)
+        portstore = Gtk.ListStore(GObject.TYPE_STRING)
         for index, port in enumerate(sorted(self.server_ports)):
             portstore.append([str(port)])
             if port == server_port:

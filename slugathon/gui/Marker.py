@@ -7,10 +7,8 @@ __license__ = "GNU GPL v2"
 import tempfile
 import os
 
-import gtk
+from gi.repository import Gtk, GdkPixbuf, Pango, PangoCairo
 import cairo
-import pango
-import pangocairo
 
 from slugathon.util import guiutils, fileutils
 
@@ -47,11 +45,11 @@ class Marker(object):
                 as tmp_file:
             tmp_path = tmp_file.name
         self.surface.write_to_png(tmp_path)
-        pixbuf = gtk.gdk.pixbuf_new_from_file(tmp_path)
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file(tmp_path)
         os.remove(tmp_path)
-        self.event_box = gtk.EventBox()
+        self.event_box = Gtk.EventBox()
         self.event_box.marker = self
-        self.image = gtk.Image()
+        self.image = Gtk.Image()
         self.image.set_from_pixbuf(pixbuf)
         self.event_box.add(self.image)
 
@@ -80,25 +78,24 @@ class Marker(object):
             return
         ctx = cairo.Context(surface)
         ctx.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
-        pctx = pangocairo.CairoContext(ctx)
-        layout = pctx.create_layout()
+        layout = PangoCairo.create_layout(ctx)
         # TODO Vary font size with scale
-        desc = pango.FontDescription("Monospace 17")
+        desc = Pango.FontDescription("Monospace 17")
         layout.set_font_description(desc)
-        layout.set_alignment(pango.ALIGN_CENTER)
+        layout.set_alignment(Pango.Alignment.CENTER)
         size = surface.get_width()
 
-        layout.set_text(str(self.height))
+        layout.set_text(str(self.height), -1)
         width, height = layout.get_pixel_size()
         x = 0.65 * size
         y = 0.55 * size
-        pctx.set_source_rgb(1, 1, 1)
-        pctx.rectangle(x, y + 0.15 * height, 0.9 * width, 0.7 * height)
-        pctx.fill()
+        ctx.set_source_rgb(1, 1, 1)
+        ctx.rectangle(x, y + 0.15 * height, 0.9 * width, 0.7 * height)
+        ctx.fill()
 
-        pctx.set_source_rgb(0, 0, 0)
-        pctx.move_to(x, y)
-        pctx.show_layout(layout)
+        ctx.set_source_rgb(0, 0, 0)
+        ctx.move_to(x, y)
+        PangoCairo.show_layout(ctx, layout)
 
 
 if __name__ == "__main__":
@@ -115,8 +112,8 @@ if __name__ == "__main__":
     player.color = "Red"
     legion = Legion.Legion(player, "Rd01", creatures, 1)
     marker = Marker(legion, True, scale=45)
-    window = gtk.Window()
-    window.connect("destroy", gtk.main_quit)
+    window = Gtk.Window()
+    window.connect("destroy", Gtk.main_quit)
     window.add(marker.event_box)
     window.show_all()
-    gtk.main()
+    Gtk.main()

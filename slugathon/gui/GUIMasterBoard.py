@@ -9,14 +9,14 @@ import logging
 from sys import maxsize
 from collections import Counter
 
-from twisted.internet import gtk2reactor
+from twisted.internet import gireactor
 try:
-    gtk2reactor.install()
+    gireactor.install()
 except AssertionError:
     pass
 from twisted.internet import reactor
 from twisted.python import log
-import gtk
+from gi.repository import Gtk, Gdk
 import cairo
 from zope.interface import implementer
 
@@ -95,13 +95,13 @@ ui_string = """<ui>
 
 
 @implementer(IObserver)
-class GUIMasterBoard(gtk.EventBox):
+class GUIMasterBoard(Gtk.EventBox):
 
     """GUI representation of the masterboard."""
 
     def __init__(self, board, game=None, user=None, playername=None,
                  scale=None, parent_window=None):
-        gtk.EventBox.__init__(self)
+        Gtk.EventBox.__init__(self)
 
         self.board = board
         self.user = user
@@ -112,18 +112,18 @@ class GUIMasterBoard(gtk.EventBox):
         self.connect("delete-event", self.cb_delete_event)
         self.connect("destroy", self.cb_destroy)
 
-        self.hbox = gtk.HBox()
+        self.hbox = Gtk.HBox()
         self.add(self.hbox)
 
-        self.vbox = gtk.VBox()
+        self.vbox = Gtk.VBox()
         self.hbox.pack_start(self.vbox, expand=False)
-        self.vbox2 = gtk.VBox()
+        self.vbox2 = Gtk.VBox()
         self.hbox.pack_start(self.vbox2)
 
-        self.notebook1 = gtk.Notebook()
-        self.notebook2 = gtk.Notebook()
+        self.notebook1 = Gtk.Notebook()
+        self.notebook2 = Gtk.Notebook()
         self.vbox2.pack_start(self.notebook1)
-        self.vbox2.pack_start(gtk.HSeparator())
+        self.vbox2.pack_start(Gtk.HSeparator())
         self.vbox2.pack_start(self.notebook2)
 
         self.create_ui()
@@ -135,7 +135,7 @@ class GUIMasterBoard(gtk.EventBox):
             self.scale = self.compute_scale()
         else:
             self.scale = scale
-        self.area = gtk.DrawingArea()
+        self.area = Gtk.DrawingArea()
         self.area.set_size_request(self.compute_width(), self.compute_height())
         self.vbox.pack_start(self.area, expand=False)
         self.markers = []
@@ -162,41 +162,41 @@ class GUIMasterBoard(gtk.EventBox):
         self.repaint_hexlabels = set()
 
         self.area.connect("expose-event", self.cb_area_expose)
-        self.area.add_events(gtk.gdk.BUTTON_PRESS_MASK)
+        self.area.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
         self.area.connect("button-press-event", self.cb_click)
-        self.area.add_events(gtk.gdk.POINTER_MOTION_MASK)
+        self.area.add_events(Gdk.EventMask.POINTER_MOTION_MASK)
         self.area.connect("motion-notify-event", self.cb_motion)
         self.show_all()
 
     def create_ui(self):
-        ag = gtk.ActionGroup("MasterActions")
+        ag = Gtk.ActionGroup("MasterActions")
         actions = [
             ("GameMenu", None, "_Game"),
-            ("Save", gtk.STOCK_SAVE, "_Save", "s", "Save", self.cb_save),
-            ("Quit", gtk.STOCK_QUIT, "_Quit", "<control>Q", "Quit program",
+            ("Save", Gtk.STOCK_SAVE, "_Save", "s", "Save", self.cb_save),
+            ("Quit", Gtk.STOCK_QUIT, "_Quit", "<control>Q", "Quit program",
              self.cb_quit),
-            ("Withdraw", gtk.STOCK_DISCONNECT, "_Withdraw", "<control>W",
+            ("Withdraw", Gtk.STOCK_DISCONNECT, "_Withdraw", "<control>W",
              "Withdraw from the game", self.cb_withdraw),
 
             ("PhaseMenu", None, "_Phase"),
-            ("Done", gtk.STOCK_APPLY, "_Done", "d", "Done", self.cb_done),
-            ("Undo", gtk.STOCK_UNDO, "_Undo", "u", "Undo", self.cb_undo),
-            ("Undo All", gtk.STOCK_DELETE, "Undo _All", "a", "Undo All",
+            ("Done", Gtk.STOCK_APPLY, "_Done", "d", "Done", self.cb_done),
+            ("Undo", Gtk.STOCK_UNDO, "_Undo", "u", "Undo", self.cb_undo),
+            ("Undo All", Gtk.STOCK_DELETE, "Undo _All", "a", "Undo All",
              self.cb_undo_all),
-            ("Redo", gtk.STOCK_REDO, "_Redo", "r", "Redo", self.cb_redo),
-            ("Mulligan", gtk.STOCK_MEDIA_REWIND, "_Mulligan", "m", "Mulligan",
+            ("Redo", Gtk.STOCK_REDO, "_Redo", "r", "Redo", self.cb_redo),
+            ("Mulligan", Gtk.STOCK_MEDIA_REWIND, "_Mulligan", "m", "Mulligan",
              self.cb_mulligan),
-            ("Clear Recruit Chits", gtk.STOCK_CLEAR, "_Clear Recruit Chits",
+            ("Clear Recruit Chits", Gtk.STOCK_CLEAR, "_Clear Recruit Chits",
              "c", "Clear Recruit Chits", self.clear_all_recruitchits),
-            ("Pause AI", gtk.STOCK_MEDIA_PAUSE, "_Pause AI", "p",
+            ("Pause AI", Gtk.STOCK_MEDIA_PAUSE, "_Pause AI", "p",
              "Pause AI", self.pause_ai),
-            ("Resume AI", gtk.STOCK_MEDIA_PLAY, "_Resume AI", "",
+            ("Resume AI", Gtk.STOCK_MEDIA_PLAY, "_Resume AI", "",
              "Resume AI", self.resume_ai),
 
             ("OptionsMenu", None, "_Options"),
 
             ("HelpMenu", None, "_Help"),
-            ("About", gtk.STOCK_ABOUT, "_About", None, "About", self.cb_about),
+            ("About", Gtk.STOCK_ABOUT, "_About", None, "About", self.cb_about),
         ]
         ag.add_actions(actions)
         toggle_actions = [
@@ -217,7 +217,7 @@ class GUIMasterBoard(gtk.EventBox):
             ),
         ]
         ag.add_toggle_actions(toggle_actions)
-        self.ui = gtk.UIManager()
+        self.ui = Gtk.UIManager()
         self.ui.insert_action_group(ag, 0)
         self.ui.add_ui_from_string(ui_string)
 
@@ -262,27 +262,27 @@ class GUIMasterBoard(gtk.EventBox):
         if not self.guicaretaker:
             self.guicaretaker = GUICaretaker.GUICaretaker(self.game,
                                                           self.playername)
-            self.notebook1.append_page(self.guicaretaker, gtk.Label("Caretaker"))
+            self.notebook1.append_page(self.guicaretaker, Gtk.Label("Caretaker"))
             self.game.add_observer(self.guicaretaker)
 
     def _init_status_screen(self):
         if not self.status_screen:
             self.status_screen = StatusScreen.StatusScreen(self.game,
                                                            self.playername)
-            self.notebook2.append_page(self.status_screen, gtk.Label("Status"))
+            self.notebook2.append_page(self.status_screen, Gtk.Label("Status"))
             self.game.add_observer(self.status_screen)
 
     def _init_inspector(self):
         if not self.inspector:
             self.inspector = Inspector.Inspector(self.playername)
-            self.vbox2.pack_start(gtk.HSeparator())
+            self.vbox2.pack_start(Gtk.HSeparator())
             self.vbox2.pack_start(self.inspector)
 
     def _init_event_log(self):
         if not self.event_log:
             self.event_log = EventLog.EventLog(self.game, self.playername)
             self.game.add_observer(self.event_log)
-            self.notebook2.append_page(self.event_log, gtk.Label("Events"))
+            self.notebook2.append_page(self.event_log, Gtk.Label("Events"))
 
     def cb_delete_event(self, widget, event):
         if self.game is None or self.game.over:
@@ -651,8 +651,8 @@ class GUIMasterBoard(gtk.EventBox):
     def compute_scale(self):
         """Return the approximate maximum scale that let the board fit on
         the screen."""
-        width = gtk.gdk.screen_width()
-        height = gtk.gdk.screen_height()
+        width = Gtk.gdk.screen_width()
+        height = Gtk.gdk.screen_height()
         xscale = width / (self.board.hex_width * 4. + 2)
         # Fudge factor to leave room for menus and toolbars and EventLog.
         yscale = height / (self.board.hex_height * 4 * SQRT3) - 5
@@ -1571,7 +1571,7 @@ class GUIMasterBoard(gtk.EventBox):
 if __name__ == "__main__":
     from slugathon.game import MasterBoard
 
-    window = gtk.Window()
+    window = Gtk.Window()
     window.set_default_size(1024, 768)
     board = MasterBoard.MasterBoard()
     guiboard = GUIMasterBoard(board, parent_window=window)

@@ -6,7 +6,7 @@ __license__ = "GNU GPL v2"
 
 import logging
 
-import gtk
+from gi.repository import Gtk, Gdk
 from twisted.internet import defer
 
 from slugathon.data.playercolordata import colors
@@ -21,37 +21,46 @@ def new(playername, game, colors_left, parent):
     return pickcolor, def1
 
 
-class PickColor(gtk.Dialog):
+class PickColor(Gtk.Dialog):
     """Dialog to pick a player color."""
     def __init__(self, playername, game, colors_left, parent, def1):
-        gtk.Dialog.__init__(self, "Pick Color - %s" % playername, parent)
+        Gtk.Dialog.__init__(self, "Pick Color - %s" % playername, parent)
         self.playername = playername
         self.game = game
         self.deferred = def1
 
         self.vbox.set_spacing(9)
-        label1 = gtk.Label("Pick a color")
-        self.vbox.pack_start(label1)
+        label1 = Gtk.Label("Pick a color")
+        self.vbox.pack_start(label1, expand=True, fill=True, padding=0)
 
         self.set_icon(icon.pixbuf)
         self.set_transient_for(parent)
         self.set_destroy_with_parent(True)
-        self.set_has_separator(False)
         self.set_keep_above(True)
 
-        hbox = gtk.HBox(len(colors), spacing=3)
-        self.vbox.pack_start(hbox)
+        hbox = Gtk.HBox(len(colors), spacing=3)
+        self.vbox.pack_start(hbox, expand=True, fill=True, padding=0)
         for button_name in colors_left:
-            button = gtk.Button(button_name)
-            hbox.pack_start(button)
+            button = Gtk.Button(button_name)
+            hbox.pack_start(button, expand=True, fill=True, padding=0)
             button.connect("button-press-event", self.cb_click)
-            color = button_name
-            gtk_color = button.get_colormap().alloc_color(color)
-            button.modify_bg(gtk.STATE_NORMAL, gtk_color)
-            fg_name = contrasting_colors[color]
-            fg_color = button.get_colormap().alloc_color(fg_name)
-            label = button.get_child()
-            label.modify_fg(gtk.STATE_NORMAL, fg_color)
+            color_bg = button_name
+            color_fg = contrasting_colors[color_bg]
+
+            css_data = """
+                GtkButton {{
+                    color: {};
+                    background-color: {};
+                    background-image: none;
+                    }}
+                """.format(color_fg, color_bg)
+            css_provider = Gtk.CssProvider()
+            css_provider.load_from_data(css_data)
+            css_context = button.get_style_context()
+            css_context.add_provider\
+                    ( css_provider
+                    , Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+                    )
 
         self.connect("destroy", self.cb_destroy)
         self.show_all()
@@ -83,4 +92,4 @@ if __name__ == "__main__":
     pickcolor, def1 = new(playername, game, colors_left, None)
     def1.addCallback(my_callback)
     pickcolor.connect("destroy", guiutils.exit)
-    gtk.main()
+    Gtk.main()

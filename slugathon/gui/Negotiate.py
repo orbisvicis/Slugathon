@@ -6,13 +6,13 @@ __license__ = "GNU GPL v2"
 
 import logging
 
-from twisted.internet import gtk2reactor
+from twisted.internet import gireactor
 try:
-    gtk2reactor.install()
+    gireactor.install()
 except AssertionError:
     pass
 from twisted.internet import defer, reactor
-import gtk
+from gi.repository import Gtk
 
 from slugathon.gui import Chit, Marker, icon
 
@@ -31,13 +31,13 @@ def new(playername, attacker_legion, defender_legion, parent):
     return negotiate, def1
 
 
-class Negotiate(gtk.Dialog):
+class Negotiate(Gtk.Dialog):
 
     """Dialog to choose whether to concede, negotiate, or fight."""
 
     def __init__(self, playername, attacker_legion, defender_legion,
                  def1, parent):
-        gtk.Dialog.__init__(self, "Negotiate - %s" % playername, parent)
+        Gtk.Dialog.__init__(self, "Negotiate - %s" % playername, parent)
         self.attacker_legion = attacker_legion
         self.defender_legion = defender_legion
         self.deferred = def1
@@ -47,48 +47,48 @@ class Negotiate(gtk.Dialog):
         self.set_destroy_with_parent(True)
         self.vbox.set_spacing(9)
 
-        legion_name = gtk.Label(
+        legion_name = Gtk.Label(
             "Legion %s (%s) negotiates with %s (%s) in hex %s?" % (
                 attacker_legion.markerid, attacker_legion.picname,
                 defender_legion.markerid, defender_legion.picname,
                 defender_legion.hexlabel))
-        self.vbox.pack_start(legion_name)
+        self.vbox.pack_start(legion_name, expand=True, fill=True, padding=0)
 
-        attacker_hbox = gtk.HBox(spacing=15)
-        self.vbox.pack_start(attacker_hbox)
-        attacker_marker_hbox = gtk.HBox()
-        attacker_hbox.pack_start(attacker_marker_hbox, expand=False)
-        attacker_score_label = gtk.Label("%d\n points" %
+        attacker_hbox = Gtk.HBox(spacing=15)
+        self.vbox.pack_start(attacker_hbox, expand=True, fill=True, padding=0)
+        attacker_marker_hbox = Gtk.HBox()
+        attacker_hbox.pack_start(attacker_marker_hbox, expand=False, fill=True, padding=0)
+        attacker_score_label = Gtk.Label("%d\n points" %
                                          attacker_legion.score)
-        attacker_hbox.pack_start(attacker_score_label, expand=False)
-        attacker_chits_hbox = gtk.HBox(spacing=3)
-        attacker_hbox.pack_start(attacker_chits_hbox)
+        attacker_hbox.pack_start(attacker_score_label, expand=False, fill=True, padding=0)
+        attacker_chits_hbox = Gtk.HBox(spacing=3)
+        attacker_hbox.pack_start(attacker_chits_hbox, expand=True, fill=True, padding=0)
 
-        defender_hbox = gtk.HBox(spacing=15)
-        self.vbox.pack_start(defender_hbox)
-        defender_marker_hbox = gtk.HBox()
-        defender_hbox.pack_start(defender_marker_hbox, expand=False)
-        defender_chits_hbox = gtk.HBox(spacing=3)
-        defender_score_label = gtk.Label("%d\n points" %
+        defender_hbox = Gtk.HBox(spacing=15)
+        self.vbox.pack_start(defender_hbox, expand=True, fill=True, padding=0)
+        defender_marker_hbox = Gtk.HBox()
+        defender_hbox.pack_start(defender_marker_hbox, expand=False, fill=True, padding=0)
+        defender_chits_hbox = Gtk.HBox(spacing=3)
+        defender_score_label = Gtk.Label("%d\n points" %
                                          defender_legion.score)
-        defender_hbox.pack_start(defender_score_label, expand=False)
-        defender_hbox.pack_start(defender_chits_hbox)
+        defender_hbox.pack_start(defender_score_label, expand=False, fill=True, padding=0)
+        defender_hbox.pack_start(defender_chits_hbox, expand=True, fill=True, padding=0)
 
         self.attacker_marker = Marker.Marker(attacker_legion, True, scale=20)
         attacker_marker_hbox.pack_start(self.attacker_marker.event_box,
-                                        expand=False)
+                                        expand=False, fill=True, padding=0)
         self.attacker_marker.connect("button-press-event", self.cb_click)
 
         self.defender_marker = Marker.Marker(defender_legion, True, scale=20)
         defender_marker_hbox.pack_start(self.defender_marker.event_box,
-                                        expand=False)
+                                        expand=False, fill=True, padding=0)
         self.defender_marker.connect("button-press-event", self.cb_click)
 
         self.attacker_chits = []
 
         for creature in attacker_legion.sorted_creatures:
             chit = Chit.Chit(creature, attacker_legion.player.color, scale=20)
-            attacker_chits_hbox.pack_start(chit.event_box, expand=False)
+            attacker_chits_hbox.pack_start(chit.event_box, expand=False, fill=True, padding=0)
             chit.connect("button-press-event", self.cb_click)
             self.attacker_chits.append(chit)
 
@@ -96,7 +96,7 @@ class Negotiate(gtk.Dialog):
 
         for creature in defender_legion.sorted_creatures:
             chit = Chit.Chit(creature, defender_legion.player.color, scale=20)
-            defender_chits_hbox.pack_start(chit.event_box, expand=False)
+            defender_chits_hbox.pack_start(chit.event_box, expand=False, fill=True, padding=0)
             chit.connect("button-press-event", self.cb_click)
             self.defender_chits.append(chit)
 
